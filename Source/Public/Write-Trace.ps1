@@ -40,26 +40,23 @@ function Write-Trace {
         [String[]]$Tags,
 
         # Supports passing in an existing Stopwatch so you can correlate logs output across jobs
-        [Diagnostics.Stopwatch]$Stopwatch
+        [DateTimeOffset]$StartTime
     )
     begin {
-        if($Stopwatch) {
-            [TraceMessage]::StopWatch = $Stopwatch
+        if($StartTime) {
+            [TraceMessage]::StartTime = $StartTime
         }
 
-        # When no running timer is provided...
-        if(-not [TraceMessage]::StopWatch.IsRunning) {
-            # We can start a new timer ...
-            [TraceMessage]::StopWatch.ReStart()
-
-            # But we assume the timer is for this "run" and we must stop it ourselves at the next prompt
-            ${Pre-Trace Timer Prompt} = $function:prompt
+        if(!${global:Pre-Trace Timer Prompt}) {
+            # Assume that we should reset the StartTime any time we hit the prompt:
+            ${global:Pre-Trace Timer Prompt} = $function:prompt
 
             $function:prompt = {
-                [TraceMessage]::StopWatch.Stop()
-                & ${Pre-Trace Timer Prompt}
-                ${function:global:prompt} = ${Pre-Trace Timer Prompt}
-            }.GetNewClosure()
+                [TraceMessage]::StartTime = [DateTimeOffset]::MinValue
+                & ${global:Pre-Trace Timer Prompt}
+                ${function:global:prompt} = ${global:Pre-Trace Timer Prompt}
+                Remove-Variable -Scope Global -Name "Pre-Trace Timer Prompt"
+            }
         }
 
         # Magically look up the stack for anyone turning on a Debug switch, and treat it as "Continue" in here

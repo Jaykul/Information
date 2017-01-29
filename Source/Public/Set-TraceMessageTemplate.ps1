@@ -8,7 +8,7 @@ function Set-TraceMessageTemplate {
 
             $MessageData    = The object passed in to Write-Trace
             $Message        = A string representation of the $MessageData
-            $Time           = The current Time (the TimeOfDay from a DateTimeOffset)
+            $Time           = The current Time (the TimeOfDay from a DateTime)
             $Elapsed        = The elapsed time on the TraceMessage stopwatch
 
             Additionally, there are several variables from the last frame of the call stack:

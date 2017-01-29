@@ -7,8 +7,10 @@ class TraceMessage : System.Management.Automation.HostInformationMessage {
 
     # The Time is here so we can use it in the MessageTemplate
     [DateTimeOffset]$TimeGenerated = [DateTimeOffset]::Now
-    [TimeSpan]$ElapsedTime         = [TraceMessage]::StopWatch.Elapsed
+    [TimeSpan]$ElapsedTime
 
+    # A holder for the start time
+    static [DateTimeOffset]$StartTime = [DateTimeOffset]::MinValue
     # A default MessageTemplate
     static [string]$MessageTemplate = $(if($global:Host.UI.SupportsVirtualTerminal -or $Env:ConEmuANSI -eq "ON") {
                                           '$e[38;5;1m${Elapsed}$("  " * $CallStackDepth)$e[38;5;6m${Message} $e[38;5;5m<${Command}> ${ScriptName}:${LineNumber}$e[39m'
@@ -16,19 +18,27 @@ class TraceMessage : System.Management.Automation.HostInformationMessage {
                                           '${Elapsed} ${ScriptName}:${FunctionName}:${LineNumber} ${Message}'
                                       })
 
-    static [Diagnostics.Stopwatch]$StopWatch = $([Diagnostics.Stopwatch]::new())
-
     # The only constructor takes the message and the CallStack as parameters
     TraceMessage([Object]$MessageData, [System.Management.Automation.CallStackFrame[]]$CallStack){
 
         $this.MessageData = $MessageData
         $this.CallStack = $CallStack
 
+        if([DateTimeOffset]::MinValue -eq [TraceMessage]::StartTime) {
+            [TraceMessage]::StartTime = $this.TimeGenerated
+        }
+
+        $this.ElapsedTime = $this.TimeGenerated - [TraceMessage]::StartTime
+
         $e = [char]27
         # These are the things I can imagine wanting in the debug message
         $Message        = ([PSCustomObject]@{Data=$MessageData} | Format-Table -HideTableHeaders -AutoSize | Out-String).Trim()
         $ScriptPath     = $CallStack[0].ScriptName
-        $ScriptName     = Split-Path $ScriptPath -Leaf
+        if($ScriptPath) {
+            $ScriptName = Split-Path $ScriptPath -Leaf
+        } else {
+            $ScriptName = "<.>"
+        }
         $Command        = $CallStack[0].Command
         $FunctionName   = $CallStack[0].FunctionName -replace '^<?(.*)>?$','<$1>'
         $LineNumber     = $CallStack[0].ScriptLineNumber

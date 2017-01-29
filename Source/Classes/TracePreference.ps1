@@ -1,5 +1,3 @@
-using namespace System.Management.Automation
-
 [Flags()]
 enum TracePreference {
     None = 0

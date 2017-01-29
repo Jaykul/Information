@@ -37,9 +37,32 @@ function Write-Trace {
         [PSObject]$MessageData,
 
         # Specifies a simple string that you can use to sort and filter messages that you have added to the information stream with Write-Information
-        [String[]]$Tags
+        [String[]]$Tags,
+
+        # Supports passing in an existing Stopwatch so you can correlate logs output across jobs
+        [Diagnostics.Stopwatch]$Stopwatch
     )
     begin {
+        if($Stopwatch) {
+            [TraceMessage]::StopWatch = $Stopwatch
+        }
+
+        # When no running timer is provided...
+        if(-not [TraceMessage]::StopWatch.IsRunning) {
+            # We can start a new timer ...
+            [TraceMessage]::StopWatch.ReStart()
+
+            # But we assume the timer is for this "run" and we must stop it ourselves at the next prompt
+            ${Pre-Trace Timer Prompt} = $function:prompt
+
+            $function:prompt = {
+                [TraceMessage]::StopWatch.Stop()
+                & ${Pre-Trace Timer Prompt}
+                ${function:global:prompt} = ${Pre-Trace Timer Prompt}
+            }.GetNewClosure()
+        }
+
+        # Magically look up the stack for anyone turning on a Debug switch, and treat it as "Continue" in here
         if((Get-PSCallStack).Where({ $_.InvocationInfo.BoundParameters.ContainsKey("Debug") }, 1).InvocationInfo.BoundParameters.Debug) {
             $DebugPreference = "Continue"
         }

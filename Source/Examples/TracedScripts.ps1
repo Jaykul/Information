@@ -1,3 +1,9 @@
+<#
+    .Synopsis
+        A very simple example, where there's just a single script being traced.
+    .Description
+        I added the function in this script just so that the example shows a small callstack
+#>
 [CmdletBinding()]param()
 Write-Trace "Enter $PSCommandPath" -Tag Enter, Trace
 

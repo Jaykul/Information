@@ -31,8 +31,7 @@ param(
     [Globalization.CultureInfo]$DefaultLanguage = $((Get-Culture).Name)
 )
 
-$Script:TraceVerboseTimer = New-Object System.Diagnostics.Stopwatch
-$Script:TraceVerboseTimer.Start()
+$Script:StartTime = [DateTimeOffset]::Now
 
 
 $ErrorActionPreference = "Stop"
@@ -408,7 +407,7 @@ function package {
 
 
 # First call to Write-Trace, pass in our TraceTimer to make sure we time EVERYTHING.
-Write-Trace "BUILDING: $ModuleName in $Path" -Stopwatch $TraceVerboseTimer
+Write-Trace "BUILDING: $ModuleName in $Path" -StartTime $StartTime
 
 Push-Location $Path
 
@@ -421,5 +420,3 @@ foreach($s in $step){
 
 Pop-Location
 Write-Host "FINISHED: $ModuleName in $Path"
-$Script:TraceVerboseTimer.Stop()
-Remove-Variable -Scope Script -Name TraceVerboseTimer

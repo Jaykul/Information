@@ -30,13 +30,11 @@ param(
     # The default language is your current UICulture
     [Globalization.CultureInfo]$DefaultLanguage = $((Get-Culture).Name)
 )
-
-$Script:StartTime = [DateTimeOffset]::Now
-
+# First call to Write-Trace, pass in our TraceTimer to make sure we time EVERYTHING.
+Write-Trace "BUILDING: $ModuleName in $Path"
 
 $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
-
 
 function init {
     #.Synopsis
@@ -311,9 +309,11 @@ function test {
     Set-Content "$TestPath\.Do.Not.COMMIT.This.Steps.ps1" "Import-Module $ReleasePath\${ModuleName}.psd1 -Force"
 
     # Show the commands they would have to run to get these results:
-    Write-Host $(prompt) -NoNewLine
-    Write-Host Import-Module $ReleasePath\${ModuleName}.psd1 -Force
-    Write-Host $(prompt) -NoNewLine
+    if(Get-Command prompt -ErrorAction Ignore) {
+        Write-Host $(prompt) -NoNewLine
+        Write-Host Import-Module $ReleasePath\${ModuleName}.psd1 -Force
+        Write-Host $(prompt) -NoNewLine
+    }
 
     # TODO: Update dependency to Pester 4.0 and use just Invoke-Pester
     if(Get-Command Invoke-Gherkin -ErrorAction SilentlyContinue) {
@@ -404,10 +404,6 @@ function package {
     # You can add other artifacts here
     ls $OutputPath -File
 }
-
-
-# First call to Write-Trace, pass in our TraceTimer to make sure we time EVERYTHING.
-Write-Trace "BUILDING: $ModuleName in $Path" -StartTime $StartTime
 
 Push-Location $Path
 

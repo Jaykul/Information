@@ -72,7 +72,11 @@ function Write-Trace {
         ${Information Record} = [InformationRecord]::new(${Trace Message}, ${Your CallStack}[0].ToString())
 
         if($DebugPreference -eq "Continue") {
-            Write-Debug ${Trace Message}.ToString()
+            if(!$global:DebugFilterInclude -or $Tags.Where{ $_ -in $global:DebugFilterInclude}) {
+                if(!$global:DebugFilterExclude -or -not $Tags.Where{ $_ -in $global:DebugFilterExclude}) {
+                    Write-Debug ${Trace Message}.ToString()
+                }
+            }
         }
 
         foreach($Tag in $Tags) { ${Information Record}.Tags.Add($Tag) }

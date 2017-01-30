@@ -16,22 +16,27 @@ function Trace-Information {
         [Parameter(Mandatory,Position=0)]
         [ScriptBlock]$ScriptBlock,
 
-        [TracePreference]$InformationTrace
+        [string[]]$DebugFilterInclude,
+
+        [string[]]$DebugFilterExclude
     )
 
-    $InformationTracePreference, $ITP = $InformationTrace, $InformationTracePreference
+    $CmdletBinding = [bool]$ScriptBlock.Ast.ParamBlock.Attributes.Where{$_.TypeName -match "CmdletBinding"}
 
-    if($PSBoundParameters.ContainsKey("Debug")) {
-        $script:InformationDebugEcho, $IDE = $true, $script:InformationDebugEcho
-    }
-
-    if($PSBoundParameters.ContainsKey("InformationVariable") -and -not $PSBoundParameters.ContainsKey("LogVariableName")) {
+    if($PSBoundParameters.ContainsKey("InformationVariable")) {
         . $ScriptBlock
-    } else {
-        . {[CmdletBinding()]param() . $ScriptBlock } -InformationVariable Log
-        Set-Variable -Name Log -Value $Log -Scope 1
     }
+    else {
+        if($CmdletBinding) {
+            . $ScriptBlock -InformationVariable Log
+            Set-Variable -Name Log -Value $Log -Scope 1
+        }
+        else {
+            . {[CmdletBinding()]param() . $ScriptBlock } -InformationVariable Log
+            Set-Variable -Name Log -Value $Log -Scope 1
+        }
 
-    $InformationTracePreference, $ITP = $ITP, $InformationTracePreference
-    $script:InformationDebugEcho, $IDE = $IDE, $script:InformationDebugEcho
+
+
+    }
 }

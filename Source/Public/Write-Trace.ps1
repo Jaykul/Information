@@ -59,8 +59,17 @@ function Write-Trace {
             }
         }
 
-        # Magically look up the stack for anyone turning on a Debug switch, and treat it as "Continue" in here
-        if((Get-PSCallStack).Where({ $_.InvocationInfo.BoundParameters.ContainsKey("Debug") }, 1).InvocationInfo.BoundParameters.Debug) {
+        # Magically look up the stack for anyone turning on Information and treat it as present here:
+        if($Specified = (Get-PSCallStack).Where({ $_.GetFrameVariables().ContainsKey("InformationPreference")},1)) {
+            $InformationPreference = $Specified.GetFrameVariables()["InformationPreference"].Value
+        }
+
+        # Magically look up the stack for anyone turning on Debug, and treat it as "Continue" in here
+        if($Specified = (Get-PSCallStack).Where({ $_.GetFrameVariables().ContainsKey("DebugPreference")},1)) {
+            $DebugPreference = $Specified.GetFrameVariables()["DebugPreference"].Value
+        }
+        # Write-Trace always treats Debug as either Silent or Contine -- never inquire or any of that
+        if($DebugPreference -notin "SilentlyContinue","Ignore") {
             $DebugPreference = "Continue"
         }
     }

@@ -1,5 +1,10 @@
 # In this particular set of steps, I will try to use Pester 4.0's "Should" operator
 
+BeforeAll {
+    Import-Module Information -Scope Global
+}
+
+
 Given 'I call Write-Trace "(.*)"' {
     param($Message)
     Write-Trace -MessageData $Message -InformationVariable script:InformationStream

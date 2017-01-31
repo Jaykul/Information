@@ -295,9 +295,8 @@ function test {
     }
 
     Write-Trace "TESTING: $ModuleName with $TestPath"
-
     Write-Trace "TESTING $ModuleName v$Version" -Verbose:(!$Quiet)
-    Remove-Module $ModuleName -ErrorAction SilentlyContinue
+    Remove-Module $ModuleName -ErrorAction Ignore
 
     $Options = @{
         OutputFormat = "NUnitXml"
@@ -306,14 +305,16 @@ function test {
     if($Quiet) { $Options.Quiet = $Quiet }
     if(!$ShowWip){ $Options.ExcludeTag = @("wip") }
 
-    Set-Content "$TestPath\.Do.Not.COMMIT.This.Steps.ps1" "Import-Module $ReleasePath\${ModuleName}.psd1 -Force"
+    Set-Content "$TestPath\.Do.Not.COMMIT.This.Steps.ps1" "
+        Remove-Module $ModuleName -ErrorAction Ignore
+        Import-Module $ReleasePath\${ModuleName}.psd1 -Force"
 
     # Show the commands they would have to run to get these results:
-    if(Get-Command prompt -ErrorAction Ignore) {
-        Write-Host $(prompt) -NoNewLine
-        Write-Host Import-Module $ReleasePath\${ModuleName}.psd1 -Force
-        Write-Host $(prompt) -NoNewLine
-    }
+    # if(Get-Command prompt -ErrorAction Ignore) {
+    #     Write-Host $(prompt) -NoNewLine
+    #     Write-Host Import-Module $ReleasePath\${ModuleName}.psd1 -Force
+    #     Write-Host $(prompt) -NoNewLine
+    # }
 
     # TODO: Update dependency to Pester 4.0 and use just Invoke-Pester
     if(Get-Command Invoke-Gherkin -ErrorAction SilentlyContinue) {
@@ -324,7 +325,7 @@ function test {
     # Write-Host Invoke-Pester -Path $TestPath -CodeCoverage "$ReleasePath\*.psm1" -PassThru @Options
     # $TestResults = Invoke-Pester -Path $TestPath -CodeCoverage "$ReleasePath\*.psm1" -PassThru @Options
 
-    Remove-Module $ModuleName -ErrorAction SilentlyContinue
+    Remove-Module $ModuleName -ErrorAction Ignore
     Remove-Item "$TestPath\.Do.Not.COMMIT.This.Steps.ps1"
 
     $script:failedTestsCount = 0
@@ -362,7 +363,7 @@ function test {
     }
 
     # If we're on AppVeyor ....
-    if(Get-Command Add-AppveyorCompilationMessage -ErrorAction SilentlyContinue) {
+    if(Get-Command Add-AppveyorCompilationMessage -ErrorAction Ignore) {
         Add-AppveyorCompilationMessage -Message ("{0} of {1} tests passed" -f @($TestResults.PassedScenarios).Count, (@($TestResults.PassedScenarios).Count + @($TestResults.FailedScenarios).Count)) -Category $(if(@($TestResults.FailedScenarios).Count -gt 0) { "Warning" } else { "Information"})
         Add-AppveyorCompilationMessage -Message ("{0:P} of code covered by tests" -f ($TestResults.CodeCoverage.NumberOfCommandsExecuted / $TestResults.CodeCoverage.NumberOfCommandsAnalyzed)) -Category $(if($TestResults.CodeCoverage.NumberOfCommandsExecuted -lt $TestResults.CodeCoverage.NumberOfCommandsAnalyzed) { "Warning" } else { "Information"})
     }

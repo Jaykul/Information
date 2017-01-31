@@ -49,12 +49,12 @@ function Write-Trace {
 
         if(!${global:Pre-Trace Timer Prompt}) {
             # Assume that we should reset the StartTime any time we hit the prompt:
-            ${global:Pre-Trace Timer Prompt} = $function:prompt
+            ${global:Pre-Trace Timer Prompt} = ${function:global:prompt}
 
-            $function:prompt = {
+            ${function:global:prompt} = {
                 [TraceMessage]::StartTime = [DateTimeOffset]::MinValue
-                & ${global:Pre-Trace Timer Prompt}
                 ${function:global:prompt} = ${global:Pre-Trace Timer Prompt}
+                & ${global:Pre-Trace Timer Prompt}
                 Remove-Variable -Scope Global -Name "Pre-Trace Timer Prompt"
             }
         }
@@ -63,7 +63,6 @@ function Write-Trace {
         if($Specified = (Get-PSCallStack).Where({ $_.GetFrameVariables().ContainsKey("InformationPreference")},1)) {
             $InformationPreference = $Specified.GetFrameVariables()["InformationPreference"].Value
         }
-
         # Magically look up the stack for anyone turning on Debug, and treat it as "Continue" in here
         if($Specified = (Get-PSCallStack).Where({ $_.GetFrameVariables().ContainsKey("DebugPreference")},1)) {
             $DebugPreference = $Specified.GetFrameVariables()["DebugPreference"].Value
@@ -81,8 +80,8 @@ function Write-Trace {
         ${Information Record} = [InformationRecord]::new(${Trace Message}, ${Your CallStack}[0].ToString())
 
         if($DebugPreference -eq "Continue") {
-            if(!$global:DebugFilterInclude -or $Tags.Where{ $_ -in $global:DebugFilterInclude}) {
-                if(!$global:DebugFilterExclude -or -not $Tags.Where{ $_ -in $global:DebugFilterExclude}) {
+            if(!$DebugFilterInclude -or $Tags.Where{ $_ -in $DebugFilterInclude}) {
+                if(!$DebugFilterExclude -or -not $Tags.Where{ $_ -in $DebugFilterExclude}) {
                     Write-Debug ${Trace Message}.ToString()
                 }
             }
@@ -92,3 +91,5 @@ function Write-Trace {
         $PSCmdlet.WriteInformation(${Information Record})
     }
 }
+
+Export-ModuleMember -Function * -Variable DebugFilterInclude, DebugFilterExclude

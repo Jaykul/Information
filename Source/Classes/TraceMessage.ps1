@@ -14,9 +14,9 @@ class TraceMessage {
     static [DateTimeOffset]$StartTime = [DateTimeOffset]::MinValue
     # A default MessageTemplate
     static [string]$MessageTemplate = $(if($global:Host.UI.SupportsVirtualTerminal -or $Env:ConEmuANSI -eq "ON") {
-                                          '$e[38;5;1m${Elapsed}$("  " * $CallStackDepth)$e[38;5;6m${Message} $e[38;5;5m${Command} ${ScriptName}:${LineNumber}$e[39m'
+                                          '$e[38;5;1m${Elapsed}$("  " * $CallStackDepth)$e[38;5;6m${Message} $e[38;5;5m<${Command}> ${ScriptName}:${LineNumber}$e[39m'
                                       } else {
-                                          '${Elapsed} ${ScriptName}:${FunctionName}:${LineNumber} ${Message}'
+                                          '${Elapsed} ${Message} <${Command}> ${FunctionName}:${LineNumber}'
                                       })
 
     # The only constructor takes the message and the CallStack as parameters
@@ -33,12 +33,12 @@ class TraceMessage {
 
         $e = [char]27
         # These are the things I can imagine wanting in the debug message
-        $local:Message   = ([PSCustomObject]@{Data=$MessageData} | Format-Table -HideTableHeaders -AutoSize | Out-String)
+        $local:Message   = ([PSCustomObject]@{Data=$MessageData} | Format-Table -HideTableHeaders -AutoSize | Out-String).Trim()
         $ScriptPath     = $CallStack[0].ScriptName
         if($ScriptPath) {
             $ScriptName = Split-Path $ScriptPath -Leaf
         } else {
-            $ScriptName = "<.>"
+            $ScriptName = "."
         }
         $Command        = $CallStack[0].Command
         $FunctionName   = $CallStack[0].FunctionName -replace '^<?(.*?)>?$','$1'

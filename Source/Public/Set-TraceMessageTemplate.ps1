@@ -36,6 +36,14 @@ function Set-TraceMessageTemplate {
             Set-TraceMessageTemplate '$e[38;5;1m${Elapsed}$("  " * ${CallStackDepth})$e[38;5;6m${Message} $e[38;5;5m<${Command}> ${ScriptName}:${LineNumber}$e[39m'
 
             Sets the TraceMessage to a nice template with ANSI escape sequences for color and indenting based on $CallStackDepth
+        .Example
+            Set-TraceMessageTemplate '$("{0:mm\:ss\.fff}" -f ${Elapsed})$(" " * ${CallStackDepth})${Message} <${Command}> ${ScriptName}:${LineNumber}'
+
+            This example shows how to apply a little formatting to the elapsed time.
+        .Example
+            Set-TraceMessageTemplate '$e[38;5;1m$("{0:mm\:ss\.fff}" -f ${Elapsed})$e[38;5;6m$(" " * ${CallStackDepth})${Message} $e[38;5;5m<${Command}> ${ScriptName}:${LineNumber}$e[39m'
+
+            This example shows how to add colors to the formatted time
     #>
     [CmdletBinding()]param($Template)
 

@@ -45,7 +45,10 @@ function Set-TraceMessageTemplate {
 
             This example shows how to add colors to the formatted time
     #>
-    [CmdletBinding()]param($Template)
+    [CmdletBinding()]param(
+        # The string template for help
+        $Template
+    )
 
     [TraceMessage]::MessageTemplate = $Template
 }

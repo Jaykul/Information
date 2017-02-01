@@ -1,6 +1,6 @@
 ---
 external help file: Information-help.xml
-online version: 
+online version: 1.0.0
 schema: 2.0.0
 ---
 
@@ -16,28 +16,28 @@ Set-TraceMessageTemplate [[-Template] <Object>]
 ```
 
 ## DESCRIPTION
+
 Allows setting the template string to format the trace messages.
-You should use single quotes strings with variables in them.
+You should use single quoted strings, with variables embedded in them.
 The following variables are available in Write-Trace:
 
-$MessageData    = The object passed in to Write-Trace
-$Message        = A string representation of the $MessageData
-$Time           = The current Time (the TimeOfDay from a DateTime)
-$Elapsed        = The elapsed time on the TraceMessage stopwatch
 
-Additionally, there are several variables from the last frame of the call stack:
-
-$CallStackDepth = The depth of the callstack (useful for indeting)
-$Command        = The command that was run to invoke the current code (i.e.
-the last command in the call stack)
-$FunctionName   = The name of the function (if any) containing the current code (might just be \<ScriptBlock\> to indicate no function)
-$ScriptPath     = The full path for the running script file
-$ScriptName     = The name of the running script file
-$LineNumber     = The line number of the script file
-$Location       = A pre-formatted Location string
-$Arguments      = A string representation of the arguments passed to the executing code
-
-$e              # The escape character (\[char\]27) for ANSI
+Variable            | Meaning
+--------            | --------
+`${MessageData}`    | The object passed in to Write-Trace
+`${Message}`        | A string representation of the $MessageData
+`${Time}`           | The current Time (the TimeOfDay from a DateTime)
+`${Elapsed}`        | The elapsed time on the TraceMessage stopwatch
+ | **Additionally, there are several variables from the last frame of the call stack:**
+`${CallStackDepth}` | The depth of the callstack (useful for indeting)
+`${Command}`        | The command that was run to invoke the current code (i.e. the last command in the call stack)
+`${FunctionName}`   | The name of the function (if any) containing the current code (might just be \<ScriptBlock\> to indicate no function)
+`${ScriptPath}`     | The full path for the running script file
+`${ScriptName}`     | The name of the running script file
+`${LineNumber}`     | The line number of the script file
+`${Location}`       | A pre-formatted Location string
+`${Arguments}`      | A string representation of the arguments passed to the executing code
+`${e}`              | The escape character (\[char\]27) for ANSI
 
 ## EXAMPLES
 
@@ -65,12 +65,14 @@ Sets the TraceMessage to a nice template with ANSI escape sequences for color an
 ## PARAMETERS
 
 ### -Template
-{{Fill Template Description}}
+
+The string template for help
+
 
 ```yaml
 Type: Object
 Parameter Sets: (All)
-Aliases: 
+Aliases:
 
 Required: False
 Position: 1

@@ -3,7 +3,8 @@ function Write-Trace {
         .Synopsis
             An enhancement to the built-in Write-Information to make it show the calling script line
         .Description
-            Creates a stopwatch that tracks the time elapsed while a script runs, and adds caller position and time to the output
+            Writes messages to the Information stream with callstack and tags, optionally echoing to the debug stream.
+            Messages echoed to the debug stream are only written when debugging is enabled (so they'll be visible) and can be filtered by tags.
         .Example
             Write-Trace "Enter Get-MyFunctionName"
 

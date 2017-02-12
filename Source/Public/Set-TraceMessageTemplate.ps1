@@ -31,19 +31,19 @@ function Set-TraceMessageTemplate {
         .Example
             Set-TraceMessageTemplate '${Elapsed}$("  " * ${CallStackDepth})${Message} <${Command}> ${ScriptName}:${LineNumber}'
 
-            Sets the TraceMessage to a template that includes indenting based on $CallStackDepth
-        .Example
-            Set-TraceMessageTemplate '$e[38;5;1m${Elapsed}$("  " * ${CallStackDepth})$e[38;5;6m${Message} $e[38;5;5m<${Command}> ${ScriptName}:${LineNumber}$e[39m'
-
-            Sets the TraceMessage to a nice template with ANSI escape sequences for color and indenting based on $CallStackDepth
+            Sets a template that includes indenting based on $CallStackDepth
         .Example
             Set-TraceMessageTemplate '$("{0:mm\:ss\.fff}" -f ${Elapsed})$(" " * ${CallStackDepth})${Message} <${Command}> ${ScriptName}:${LineNumber}'
 
-            This example shows how to apply a little formatting to the elapsed time.
+            Sets a template which applies formatting to the elapsed time, to shorten it.
         .Example
-            Set-TraceMessageTemplate '$e[38;5;1m$("{0:mm\:ss\.fff}" -f ${Elapsed})$e[38;5;6m$(" " * ${CallStackDepth})${Message} $e[38;5;5m<${Command}> ${ScriptName}:${LineNumber}$e[39m'
+            Set-TraceMessageTemplate '$e[38;5;1m${Elapsed}$("  " * ${CallStackDepth})$e[38;5;6m${Message} $e[38;5;5m<${Command}> ${ScriptName}:${LineNumber}$e[39m'
 
-            This example shows how to add colors to the formatted time
+            Sets a template with ANSI escape sequences for color and indenting based on $CallStackDepth
+        .Example
+            Set-TraceMessageTemplate '${Env:UserName}@${Env:ComputerName} $e[38;5;1m$("{0:hh\:mm\:ss\.fff}" -f ${Time}) $("  " * ${CallStackDepth})$e[38;5;6m${Message} $e[38;5;5m<${Command}> ${ScriptName}:${LineNumber}$e[39m'
+
+            Sets a template which includes the user and computer name, as well as using the actual time -- useful for logging across remote jobs.
     #>
     [CmdletBinding()]param(
         # The string template for help

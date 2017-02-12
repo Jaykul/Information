@@ -33,7 +33,11 @@ class TraceMessage {
 
         $e = [char]27
         # These are the things I can imagine wanting in the debug message
-        $local:Message   = ([PSCustomObject]@{Data=$MessageData} | Format-Table -HideTableHeaders -AutoSize | Out-String).Trim()
+        if($MessageData -is [String]) {
+            $local:Message = $MessageData.Trim("`r","`n") + "`n" + (" " + [regex]::Match($this.MessageTemplate,'\${?message',"IgnoreCase").Index)
+        } else {
+            $local:Message = ([PSCustomObject]@{Data=$MessageData} | Format-Table -HideTableHeaders -AutoSize | Out-String).Trim()
+        }
         $ScriptPath     = $CallStack[0].ScriptName
         if($ScriptPath) {
             $ScriptName = Split-Path $ScriptPath -Leaf

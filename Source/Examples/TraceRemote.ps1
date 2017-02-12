@@ -7,7 +7,8 @@ using module Information
         Note that you must pass in a $RemoteArgs hashtable with the ComputerName (and Credential if necessary).
 #>
 [CmdletBinding()]param($RemoteArgs = @{})
-Set-TraceMessageTemplate '${Env:UserName}@${Env:ComputerName} $e[38;5;1m${Elapsed} $("  " * ${CallStackDepth})$e[38;5;6m${Message} $e[38;5;5m<${Command}> ${ScriptName}:${LineNumber}$e[39m'
+# Another example of a trace template that includes the computer name, but with elapsed time, instead of clock time...
+Set-TraceMessageTemplate '${Env:UserName}@${Env:ComputerName} $e[38;5;1m$("{0:mm\:ss\.fff}" -f ${Elapsed}) $("  " * ${CallStackDepth})$e[38;5;6m${Message} $e[38;5;5m<${Command}> ${ScriptName}:${LineNumber}$e[39m'
 Write-Trace "Enter $PSCommandPath" -Tag Enter, Trace
 if($DebugPreference -ne "SilentlyContinue") { $DebugPreference = "Continue"}
 

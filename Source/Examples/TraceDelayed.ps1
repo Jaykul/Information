@@ -12,7 +12,7 @@ param(
     #
     # If you need to do something like this script, where you initialize a StartTime
     # because you don't call Write-Trace right away, you should make sure to initialize it as a parameter
-    # that way, if you ever need to call it from another script as we do TracedScripts below,
+    # that way, if you ever need to call it from another script as we do SimpleExample below,
     # you will be able to pass the start time through. See TraceRemote for an example.
     $StartTime = [DateTimeOffset]::UtcNow
 )
@@ -26,6 +26,6 @@ Start-Sleep -Milliseconds 1000
 Write-Trace "Initially counted $Result items" -StartTime $StartTime
 
 # And we'll call the first sample script, for fun:
-& $PSScriptRoot\TracedScripts.ps1
+& $PSScriptRoot\SimpleExample.ps1
 
 Write-Trace "Exit $PSCommandPath" -Tag Exit, Trace

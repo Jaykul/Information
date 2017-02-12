@@ -15,10 +15,8 @@ if($DebugPreference -ne "SilentlyContinue") { $DebugPreference = "Continue"}
 foreach ($loop in 1..10) { Start-Sleep -Milliseconds 100; Write-Trace "Loop $loop" }
 
 Invoke-Command @RemoteArgs {
-    param($MessageTemplate, [long]$StartTicks, [TimeSpan]$Offset, [System.Management.Automation.ActionPreference]$PassThruPreference)
-    # Does anyone know a way to pass a DateTime or a DateTimeOffset to a remote job?
-    $StartTime = [DateTimeOffset]::new($StartTicks, $Offset)
-    # Preference variables don't pass through Invoke-Command either
+    param($MessageTemplate, [DateTimeOffset]$StartTime, [System.Management.Automation.ActionPreference]$PassThruPreference)
+    # Preference variables don't pass through Invoke-Command
     $DebugPreference = $PassThruPreference
 
     Import-Module Information
@@ -27,6 +25,6 @@ Invoke-Command @RemoteArgs {
 
     # Call the other example script
     & (Join-Path (Get-Module Information).ModuleBase "Examples\TraceDelayed.ps1") -StartTime $StartTime
-} -Args ([TraceMessage]::MessageTemplate, [TraceMessage]::StartTime.Ticks, [TraceMessage]::StartTime.Offset, $DebugPreference)
+} -Args ([TraceMessage]::MessageTemplate, [TraceMessage]::StartTime, $DebugPreference)
 
 Write-Trace "Exit $PSCommandPath" -Tag Exit, Trace

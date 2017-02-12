@@ -1,37 +1,10 @@
 #requires -Version "4.0" -Module PackageManagement, Configuration, Pester
 using namespace System.Windows.Markup
-
-[CmdletBinding()]
-param(
-    # The step(s) to run. Defaults to "Clean", "Update", "Build", "Test", "Package"
-    # You may also "Publish"
-    # It's also acceptable to skip the "Clean" and particularly "Update" steps
-    [ValidateSet("Clean", "Update", "Build", "Test", "Package", "Publish")]
-    [string[]]$Step = @("Clean", "Update", "Build", "Test"),
-
-    # The path to the module to build. Defaults to the folder this script is in.
-    [Alias("PSPath")]
-    [string]$Path = $PSScriptRoot,
-
-    [string]$ModuleName = $(Split-Path $Path -Leaf),
-
-    # The target framework for .net (for packages), with fallback versions
-    # The default supports PS3:  "net40","net35","net20","net45"
-    # To only support PS4, use:  "net45","net40","net35","net20"
-    # To support PS2, you use:   "net35","net20"
-    [string[]]$TargetFramework = @("net40","net35","net20","net45"),
-
-    # The revision number (pulled from the environment in AppVeyor)
-    [Nullable[int]]$RevisionNumber = ${Env:APPVEYOR_BUILD_NUMBER},
-
-    [ValidateNotNullOrEmpty()]
-    [String]$CodeCovToken = ${ENV:CODECOV_TOKEN},
-
-    # The default language is your current UICulture
-    [Globalization.CultureInfo]$DefaultLanguage = $((Get-Culture).Name)
-)
+if(!(Get-Command Write-Trace -ListImported -ErrorAction Ignore)) {
+    Set-Alias Write-Trace Write-Host
+}
 # First call to Write-Trace, pass in our TraceTimer to make sure we time EVERYTHING.
-Write-Trace "BUILDING: $ModuleName in $Path"
+Write-Trace "BUILDING: $ModuleName in $PSScriptRoot"
 
 $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
@@ -41,10 +14,35 @@ function init {
     #   The init step always has to run.
     #   Calculate your paths and so-on here.
     [CmdletBinding()]
-    param()
+    param(
+        # The path to the folder containing the module to build.
+        # By default, the folder containing this file
+        [Alias("PSPath")]
+        [string]$Path = $PSScriptRoot,
+
+        # The name of the module to build.
+        # By default, the name of the last folder in -Path
+        [string]$ModuleName = $(Split-Path $Path -Leaf),
+
+        # The build's revision number
+        # By convention, pulled from the environment APPVEYOR_BUILD_NUMBER
+        # Otherwise, calculated as one larger than the current manifest
+        [Nullable[int]]$RevisionNumber = ${Env:APPVEYOR_BUILD_NUMBER},
+
+        # An api token for codecov.io (pulled from the environment CODECOV_TOKEN)
+        [ValidateNotNullOrEmpty()]
+        [String]$CodeCovToken = ${ENV:CODECOV_TOKEN},
+
+        # The default language is your current UICulture
+        [Globalization.CultureInfo]$DefaultLanguage = $((Get-Culture).Name)
+    )
+
 
     # Calculate Paths
-    # The output path is just a temporary output and logging location
+    # The output path is a temporary output and logging location
+    $Script:Path = $Path
+    $Script:ModuleName = $ModuleName
+    $Script:DefaultLanguage = $DefaultLanguage
     $Script:OutputPath = Join-Path $Path output
     $null = mkdir $OutputPath -Force
 
@@ -71,7 +69,7 @@ function init {
     # If the RevisionNumber is specified as ZERO, this is a release build ...
     # If the RevisionNumber is not specified, this is a dev box build
     # If the RevisionNumber is specified, we assume this is a CI build
-    if($Script:RevisionNumber -ge 0) {
+    if($RevisionNumber -ge 0) {
         # For CI builds we don't increment the build number
         $Script:Build = if($Version.Build -le 0) { 0 } else { $Version.Build }
     } else {
@@ -132,7 +130,7 @@ function update {
     [CmdletBinding()]
     param(
         # Force reinstall
-        [switch]$Force=$($Step -contains "Clean"),
+        [switch]$Force, #=$($Step -contains "Clean"),
 
         # Remove packages first
         [switch]$Clean
@@ -352,7 +350,7 @@ function test {
                     ConvertTo-Html -Title $CodeCoverageTitle |
                     Out-File (Join-Path $OutputPath "CodeCoverage-${Version}.html")
             }
-            if(${CodeCovToken})
+            if(Test-Path Variable:CodeCovToken) #${CodeCovToken})
             {
                 # TODO: https://github.com/PoshCode/PSGit/blob/dev/test/Send-CodeCov.ps1
                 Write-Trace "Sending CI Code-Coverage Results" -Verbose:(!$Quiet)
@@ -406,14 +404,16 @@ function package {
     ls $OutputPath -File
 }
 
-Push-Location $Path
+Push-Location $PSScriptRoot
 
 init
 
-foreach($s in $step){
+foreach($s in 'clean','update','build','test'){
     Write-Trace "Invoking Step: $s"
     & $s
 }
 
 Pop-Location
 Write-Host "FINISHED: $ModuleName in $Path"
+
+Remove-Item Alias:Write-Trace -ErrorAction Ignore

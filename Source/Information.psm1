@@ -1,17 +1,20 @@
 using namespace System.Management.Automation
 
+[String[]]$DebugFilterInclude = @()
+[String[]]$DebugFilterExclude = @()
 ##################################################################################
 ####
 #### This file is re-created from scratch during build
 ####
 ##################################################################################
 
-class TraceMessage : System.Management.Automation.HostInformationMessage {
+class TraceMessage {
     # This holds the original object that's passed in
-    [Object]$MessageData
+    [PSObject]$MessageData
+    [String]$Message
 
     # The CallStack
-    [System.Management.Automation.CallStackFrame[]]$CallStack
+    [Array]$CallStack
 
     # The Time is here so we can use it in the MessageTemplate
     [DateTimeOffset]$TimeGenerated = [DateTimeOffset]::Now
@@ -23,15 +26,18 @@ class TraceMessage : System.Management.Automation.HostInformationMessage {
     static [string]$MessageTemplate = $(if($global:Host.UI.SupportsVirtualTerminal -or $Env:ConEmuANSI -eq "ON") {
                                           '$e[38;5;1m${Elapsed}$("  " * $CallStackDepth)$e[38;5;6m${Message} $e[38;5;5m<${Command}> ${ScriptName}:${LineNumber}$e[39m'
                                       } else {
-                                          '${Elapsed} ${ScriptName}:${FunctionName}:${LineNumber} ${Message}'
+                                          '${Elapsed} ${Message} <${Command}> ${FunctionName}:${LineNumber}'
                                       })
 
     # The only constructor takes the message and the CallStack as parameters
-    TraceMessage([Object]$MessageData, [System.Management.Automation.CallStackFrame[]]$CallStack){
+    TraceMessage([PSObject]$MessageData, [Array]$CallStack){
 
         $this.MessageData = $MessageData
-        $this.CallStack = $CallStack
-
+        if($CallStack -isnot [System.Management.Automation.CallStackFrame[]]) {
+            $this.CallStack = $CallStack.ForEach{ $_ -split "[\r?\n]+" }
+        } else {
+            $this.CallStack = $CallStack
+        }
         if([DateTimeOffset]::MinValue -eq [TraceMessage]::StartTime) {
             [TraceMessage]::StartTime = $this.TimeGenerated
         }
@@ -40,27 +46,49 @@ class TraceMessage : System.Management.Automation.HostInformationMessage {
 
         $e = [char]27
         # These are the things I can imagine wanting in the debug message
-        $Message        = ([PSCustomObject]@{Data=$MessageData} | Format-Table -HideTableHeaders -AutoSize | Out-String).Trim()
-        $ScriptPath     = $CallStack[0].ScriptName
+        $local:Message = ([PSCustomObject]@{Data=$this.MessageData} | Format-Table -HideTableHeaders -AutoSize | Out-String).Trim()
+        if($this.MessageData -is [String]) {
+            $local:Message = $this.MessageData.Trim("`r","`n")
+            if($local:Message -match "\n") {
+                $local:Message += "`n" + (" " * [regex]::Match([TraceMessage]::MessageTemplate,'\${?message',"IgnoreCase").Index)
+            }
+        }
+
+        $Frame = $this.CallStack[0]
+
+        if($Frame -is [string]) {
+            $FunctionName, $ScriptPath, $LineNumber = ($Frame -split "^at |, |: line ", 4).Where{$_}
+            $Command = $FunctionName
+            $Location = $Frame
+            $Arguments = ''
+        } else {
+            $FunctionName   = $Frame.FunctionName -replace '^<?(.*?)>?$','$1'
+            $ScriptPath     = $Frame.ScriptName
+            $LineNumber     = $Frame.ScriptLineNumber
+            $Command        = $Frame.Command
+            $Location       = $Frame.Location
+            $Arguments      = $Frame.Arguments
+        }
+
         if($ScriptPath) {
             $ScriptName = Split-Path $ScriptPath -Leaf
         } else {
-            $ScriptName = "<.>"
+            $ScriptName = "."
         }
-        $Command        = $CallStack[0].Command
-        $FunctionName   = $CallStack[0].FunctionName -replace '^<?(.*)>?$','<$1>'
-        $LineNumber     = $CallStack[0].ScriptLineNumber
-        $Location       = $CallStack[0].Location
-        $Arguments      = $CallStack[0].Arguments
+
         $Time           = $this.TimeGenerated.TimeOfDay
         $Elapsed        = $this.ElapsedTime
-        $CallStackDepth = $CallStack.Count - 1
+        $CallStackDepth = $this.CallStack.Count - 1
 
         $this.Message = (Get-Variable ExecutionContext -ValueOnly).InvokeCommand.ExpandString( [TraceMessage]::MessageTemplate )
     }
+
+    [string]ToString() {
+        return $this.Message
+    }
 }
 
-class DateTimeOffsetHelper : System.Management.Automation.PSTypeConverter {
+class DateTimeOffsetDeserializer : System.Management.Automation.PSTypeConverter {
 
     [bool] CanConvertFrom([object]$sourceValue, [Type]$destinationType)
     {
@@ -84,6 +112,7 @@ class DateTimeOffsetHelper : System.Management.Automation.PSTypeConverter {
         return [DateTimeOffset]::new($psSourceValue.Ticks, $psSourceValue.Offset)
     }
 }
+Update-TypeData -TypeName DateTimeOffset -TargetTypeForDeserialization DateTimeOffsetDeserializer -Force
 
 # dot source the functions
 (Join-Path $PSScriptRoot Private\*.ps1 -Resolve -ErrorAction SilentlyContinue).ForEach{ . $_ }

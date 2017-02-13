@@ -1,10 +1,10 @@
 class TraceMessage {
     # This holds the original object that's passed in
-    [Object]$MessageData
+    [PSObject]$MessageData
     [String]$Message
 
     # The CallStack
-    [System.Management.Automation.CallStackFrame[]]$CallStack
+    [Array]$CallStack
 
     # The Time is here so we can use it in the MessageTemplate
     [DateTimeOffset]$TimeGenerated = [DateTimeOffset]::Now
@@ -12,19 +12,22 @@ class TraceMessage {
 
     # A holder for the start time
     static [DateTimeOffset]$StartTime = [DateTimeOffset]::MinValue
-    # A default MessageTemplate
+    # A default MessageTemplate which specifies a format for time so that the 0 time stamp still shows fractions
     static [string]$MessageTemplate = $(if($global:Host.UI.SupportsVirtualTerminal -or $Env:ConEmuANSI -eq "ON") {
-                                          '$e[38;5;1m${Elapsed}$("  " * $CallStackDepth)$e[38;5;6m${Message} $e[38;5;5m<${Command}> ${ScriptName}:${LineNumber}$e[39m'
+                                          '$e[38;5;1m$("{0:hh\:mm\:ss\.fff}" -f ${Elapsed})$("  " * $CallStackDepth)$e[38;5;6m${Message} $e[38;5;5m<${Command}> ${ScriptName}:${LineNumber}$e[39m'
                                       } else {
-                                          '${Elapsed} ${Message} <${Command}> ${FunctionName}:${LineNumber}'
+                                          '$("{0:hh\:mm\:ss\.fff}" -f ${Elapsed}) ${Message} <${Command}> ${FunctionName}:${LineNumber}'
                                       })
 
     # The only constructor takes the message and the CallStack as parameters
-    TraceMessage([Object]$MessageData, [System.Management.Automation.CallStackFrame[]]$CallStack){
+    TraceMessage([PSObject]$MessageData, [Array]$CallStack){
 
         $this.MessageData = $MessageData
-        $this.CallStack = $CallStack
-
+        if($CallStack -isnot [System.Management.Automation.CallStackFrame[]]) {
+            $this.CallStack = $CallStack.ForEach{ $_ -split "[\r?\n]+" }
+        } else {
+            $this.CallStack = $CallStack
+        }
         if([DateTimeOffset]::MinValue -eq [TraceMessage]::StartTime) {
             [TraceMessage]::StartTime = $this.TimeGenerated
         }
@@ -33,25 +36,39 @@ class TraceMessage {
 
         $e = [char]27
         # These are the things I can imagine wanting in the debug message
-        if($MessageData -is [String]) {
-            $local:Message = $MessageData.Trim("`r","`n") + "`n" + (" " + [regex]::Match($this.MessageTemplate,'\${?message',"IgnoreCase").Index)
-        } else {
-            $local:Message = ([PSCustomObject]@{Data=$MessageData} | Format-Table -HideTableHeaders -AutoSize | Out-String).Trim()
+        $local:Message = ([PSCustomObject]@{Data=$this.MessageData} | Format-Table -HideTableHeaders -AutoSize | Out-String).Trim()
+        if($this.MessageData -is [String]) {
+            $local:Message = $this.MessageData.Trim("`r","`n")
+            if($local:Message -match "\n") {
+                $local:Message += "`n" + (" " * [regex]::Match([TraceMessage]::MessageTemplate,'\${?message',"IgnoreCase").Index)
+            }
         }
-        $ScriptPath     = $CallStack[0].ScriptName
+
+        $Frame = $this.CallStack[0]
+
+        if($Frame -is [string]) {
+            $FunctionName, $ScriptPath, $LineNumber = ($Frame -split "^at |, |: line ", 4).Where{$_}
+            $Command = $FunctionName
+            $Location = $Frame
+            $Arguments = ''
+        } else {
+            $FunctionName   = $Frame.FunctionName -replace '^<?(.*?)>?$','$1'
+            $ScriptPath     = $Frame.ScriptName
+            $LineNumber     = $Frame.ScriptLineNumber
+            $Command        = $Frame.Command
+            $Location       = $Frame.Location
+            $Arguments      = $Frame.Arguments
+        }
+
         if($ScriptPath) {
             $ScriptName = Split-Path $ScriptPath -Leaf
         } else {
             $ScriptName = "."
         }
-        $Command        = $CallStack[0].Command
-        $FunctionName   = $CallStack[0].FunctionName -replace '^<?(.*?)>?$','$1'
-        $LineNumber     = $CallStack[0].ScriptLineNumber
-        $Location       = $CallStack[0].Location
-        $Arguments      = $CallStack[0].Arguments
+
         $Time           = $this.TimeGenerated.TimeOfDay
         $Elapsed        = $this.ElapsedTime
-        $CallStackDepth = $CallStack.Count - 1
+        $CallStackDepth = $this.CallStack.Count - 1
 
         $this.Message = (Get-Variable ExecutionContext -ValueOnly).InvokeCommand.ExpandString( [TraceMessage]::MessageTemplate )
     }

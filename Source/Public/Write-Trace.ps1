@@ -77,8 +77,8 @@ function Write-Trace {
     process {
         # The main point of this wrapper is to put the line number into the Source:
         ${Your CallStack} = Get-PSCallStack | Select-Object -Skip 1
-        ${Trace Message} = [TraceMessage]::new($MessageData, ${Your CallStack})
-        ${Information Record} = [InformationRecord]::new(${Trace Message}, ${Your CallStack}[0].ToString())
+        ${Trace Message} = New-TraceMessageInformationRecord $MessageData ${Your CallStack} $Tags
+        $PSCmdlet.WriteInformation(${Trace Message})
 
         if($DebugPreference -eq "Continue") {
             if(!$DebugFilterInclude -or $Tags.Where{ $_ -in $DebugFilterInclude}) {
@@ -87,9 +87,6 @@ function Write-Trace {
                 }
             }
         }
-
-        foreach($Tag in $Tags) { ${Information Record}.Tags.Add($Tag) }
-        $PSCmdlet.WriteInformation(${Information Record})
     }
 }
 

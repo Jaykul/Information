@@ -8,3 +8,4 @@
 /bin/*
 /obj/*
 *.suo
+Source/Examples/TraceException.ps1.log.clixml

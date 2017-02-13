@@ -19,7 +19,7 @@ function Protect-Trace {
 
         # The path to log to
         [Parameter()]
-        [string[]]$LogPath,
+        [string]$LogPath,
 
         # A collection of tags to include in debug output
         # If set, automatically causes Write-Trace output to be copied to the Debug stream
@@ -41,16 +41,22 @@ function Protect-Trace {
     }
 
     end {
-        trap {
+        $RealStart = [DateTimeOffset]::Now
+
+        try {
+            . {[CmdletBinding()]param() . $Command } -InformationVariable +TraceExceptionLog -ErrorVariable +TraceExceptionLog
+        } catch {
             $ex = $_
             $level = 0
-            Write-Trace -MessageData "Exception Caught: $($ex.GetType().FullName)" -Tags ErrorHandling -InformationVariable +TraceExceptionLog
-            Write-Trace -MessageData $ex -Tags Exception, $ex.GetType().Name, ErrorHandling -InformationVariable +TraceExceptionLog
+            # Make sure this error shows up in the error stream (as the last error)
+            Write-Error -ErrorRecord $ex
+            Write-Trace -MessageData "Protect-Trace Caught: $($ex.GetType().FullName)" -Tags ErrorHandling -InformationVariable +TraceExceptionLog
+            # Write-Trace -MessageData $ex -Tags Exception, $ex.GetType().Name, ErrorHandling -InformationVariable +TraceExceptionLog
 
             do {
                 $Message = $ex | Format-List * -Force | Out-String
-                $Message = "$($ex.GetType().Name) [$(($level++))] Output:`n" + $Message.Trim("`r","`n") + "`n" + (" _" * 11)
-                Write-Trace $Message -Tags ExceptionString -InformationVariable +TraceExceptionLog
+                $Message = "$($ex.GetType().Name)$(if(($level++)){" - Nested Exception ($level)"}):`n" + $Message.Trim("`r","`n")
+                Write-Trace $Message -Tags ExceptionString, $ex.GetType().Name -InformationVariable +TraceExceptionLog
 
                 # Unravel all the levels?
                 if($ex -is [System.Management.Automation.ErrorRecord]) {
@@ -59,17 +65,50 @@ function Protect-Trace {
                     $ex = $ex.InnerException
                 }
             } while($ex)
+        }
+        $RealEnd = [DateTimeOffset]::Now
 
-            if($ErrorActionPreference -eq "Continue") {
-                continue
-            } else {
-                throw
+        # To make logging convenient, we convert Errors into TraceMessages:
+        foreach($e in 0..($TraceExceptionLog.Count - 1)) {
+            if($TraceExceptionLog[$e] -isnot [System.Management.Automation.InformationRecord]) {
+                $Information_Record = @{
+                    MessageData = $TraceExceptionLog[$e]
+                    CallStack = $TraceExceptionLog[$e].ScriptStackTrace
+                    Tags = "ErrorStream",$TraceExceptionLog[$e].GetType().Name
+                }
+
+                if(!($TraceExceptionLog[$e].PSTypeNames -match "ErrorRecord")) {
+                    $Information_Record.CallStack = $TraceExceptionLog[$e].ErrorRecord.ScriptStackTrace
+                    $Information_Record.Tags += "Exception"
+                }
+
+                $TraceExceptionLog[$e] = New-TraceMessageInformationRecord @Information_Record
+
+                $Start = $RealStart
+                $End = $RealEnd
+                foreach($back in $e..0) {
+                    if([DateTimeOffset]$Time = $TraceExceptionLog[$e].TimeGenerated) {
+                        $Start = $Time
+                        break
+                    }
+                }
+                foreach($back in $e..($TraceExceptionLog.Count - 1)) {
+                    if([DateTimeOffset]$Time = $TraceExceptionLog[$e].TimeGenerated) {
+                        $End = $Time
+                        break
+                    }
+                }
+                # pre-date this event to try and line it up with when it really happened..
+                $TraceExceptionLog[$e].TimeGenerated = $Start.AddMilliseconds(($End - $Start).TotalMilliseconds / 2).DateTime
             }
         }
 
-        . {[CmdletBinding()]param() . $Command } -InformationVariable +TraceExceptionLog
 
-        $TraceExceptionLog | Export-Clixml -Path $LogPath
-        $LogPath
+        if($LogPath) {
+            $TraceExceptionLog | Export-Clixml -Depth 4 -Path $LogPath
+            Get-Item $LogPath
+        } else {
+            $TraceExceptionLog
+        }
     }
 }

@@ -3,6 +3,8 @@ Feature: Write-Trace
     I need to conditionally log output, with timestamps
     So that I can trace execution and locate problems
 
+    Background:
+        Given I call Set-TraceMessageTemplate '`${Time} `${Message}'
 
     Scenario: Simple Trace to Information
         When I call Write-Trace "Hello World"

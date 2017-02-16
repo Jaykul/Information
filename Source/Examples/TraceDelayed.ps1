@@ -2,16 +2,16 @@
     .Synopsis
         An example where output doesn't happen right away
     .Description
-        In this example we didn't want to call Write-Trace upon entry to the script, but we did want to use Elapsed time
-        To make sure the elapsed time is accurate, we create the StartTime up front, and then pass it to Write-Trace on the first call
-        Note: we could set the static [TraceMessage]::StartTime, but that would require importing the type with: using module Information
+        In this example we didn't want to call Write-Info upon entry to the script, but we did want to use Elapsed time
+        To make sure the elapsed time is accurate, we create the StartTime up front, and then pass it to Write-Info on the first call
+        Note: we could set the static [TraceInformation]::StartTime, but that would require importing the type with: using module Information
 #>
 [CmdletBinding()]
 param(
     # The time to use as the StartTime for printing elapsed time stamps
     #
     # If you need to do something like this script, where you initialize a StartTime
-    # because you don't call Write-Trace right away, you should make sure to initialize it as a parameter
+    # because you don't call Write-Info right away, you should make sure to initialize it as a parameter
     # that way, if you ever need to call it from another script as we do SimpleExample below,
     # you will be able to pass the start time through. See TraceRemote for an example.
     $StartTime = [DateTimeOffset]::UtcNow
@@ -23,9 +23,9 @@ $Result = Get-Random -Maximum 1000
 Start-Sleep -Milliseconds 1000
 
 # Now we're ready to start logging output:
-Write-Trace "Initially counted $Result items" -StartTime $StartTime
+Write-Info "Initially counted $Result items" -StartTime $StartTime
 
 # And we'll call the first sample script, for fun:
 & $PSScriptRoot\SimpleExample.ps1
 
-Write-Trace "Exit $PSCommandPath" -Tag Exit, Trace
+Write-Info "Exit $PSCommandPath" -Tag Exit, Trace

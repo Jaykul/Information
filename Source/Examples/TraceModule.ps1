@@ -1,6 +1,6 @@
 #requires -Module Information
 [CmdletBinding()]param($RemoteArgs = @{})
-Write-Trace "Enter $PSCommandPath" -Tag Enter, Trace
+Write-Info "Enter $PSCommandPath" -Tag Enter, Trace
 
 
 New-Module -Name "My Custom Module" {
@@ -12,27 +12,27 @@ New-Module -Name "My Custom Module" {
             [string[]]$Message
         )
         begin {
-            Write-Trace "Enter Invoke-ModuleFunction Begin"
-            Write-Trace "-  Begin $Message"
-            Write-Trace "Exit Invoke-ModuleFunction Begin"
+            Write-Info "Enter Invoke-ModuleFunction Begin"
+            Write-Info "-  Begin $Message"
+            Write-Info "Exit Invoke-ModuleFunction Begin"
         }
 
         process {
-            Write-Trace "Enter Invoke-ModuleFunction Process"
-            Write-Trace "-  Process $Message"
-            Write-Trace "Exit Invoke-ModuleFunction Process"
+            Write-Info "Enter Invoke-ModuleFunction Process"
+            Write-Info "-  Process $Message"
+            Write-Info "Exit Invoke-ModuleFunction Process"
         }
 
         end {
-            Write-Trace "Enter Invoke-ModuleFunction End"
-            Write-Trace "-  End $Message"
-            Write-Trace "Exit Invoke-ModuleFunction End"
+            Write-Info "Enter Invoke-ModuleFunction End"
+            Write-Info "-  End $Message"
+            Write-Info "Exit Invoke-ModuleFunction End"
         }
     }
 } | Import-Module
 
 
-Write-Trace "Invoke Module Function" -Tag Enter, Trace
+Write-Info "Invoke Module Function" -Tag Enter, Trace
 
 "Hello World", "Goodbye!" | Invoke-ModuleFunction
 
@@ -42,4 +42,4 @@ Write-Trace "Invoke Module Function" -Tag Enter, Trace
 
 Remove-Module "My Custom Module"
 
-Write-Trace "Exit $PSCommandPath" -Tag Exit, Trace
+Write-Info "Exit $PSCommandPath" -Tag Exit, Trace

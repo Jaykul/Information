@@ -4,7 +4,7 @@
 RootModule = 'Information.psm1'
 
 # Version number of this module.
-ModuleVersion = '0.3.0'
+ModuleVersion = '0.4.0'
 
 # ID used to uniquely identify this module
 GUID = '775a34c4-0c58-4836-9176-25fd2dc31f64'
@@ -31,7 +31,7 @@ PowerShellVersion = '5.0'
 # FormatsToProcess = @()
 
 # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
-FunctionsToExport = 'Write-Trace', 'Protect-Trace', 'Set-TraceMessageTemplate'
+FunctionsToExport = 'Write-Info', 'Trace-Info', 'Set-InfoTemplate'
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 CmdletsToExport = @()

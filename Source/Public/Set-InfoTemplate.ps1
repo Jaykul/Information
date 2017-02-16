@@ -1,15 +1,15 @@
-function Set-TraceMessageTemplate {
+function Set-InfoTemplate {
     <#
         .Synopsis
             Sets the template string used for trace messages
         .Description
             Allows setting the template string to format the trace messages. You should use single quotes strings with variables in them.
-            The following variables are available in Write-Trace:
+            The following variables are available in Write-Info:
 
-            $MessageData    = The object passed in to Write-Trace
+            $MessageData    = The object passed in to Write-Info
             $Message        = A string representation of the $MessageData
             $Time           = The current Time (the TimeOfDay from a DateTime)
-            $Elapsed        = The elapsed time on the TraceMessage stopwatch
+            $Elapsed        = The elapsed time on the TraceInformation stopwatch
 
             Additionally, there are several variables from the last frame of the call stack:
 
@@ -25,23 +25,23 @@ function Set-TraceMessageTemplate {
             $e              # The escape character ([char]27) for ANSI
 
         .Example
-            Set-TraceMessageTemplate '${Elapsed} ${ScriptName}:${LineNumber} ${Message}'
+            Set-InfoTemplate '${Elapsed} ${ScriptName}:${LineNumber} ${Message}'
 
-            Sets the TraceMessage template to a simple message showing elapsed time, the source, and the message
+            Sets the TraceInformation template to a simple message showing elapsed time, the source, and the message
         .Example
-            Set-TraceMessageTemplate '${Elapsed}$("  " * ${CallStackDepth})${Message} <${Command}> ${ScriptName}:${LineNumber}'
+            Set-InfoTemplate '${Elapsed}$("  " * ${CallStackDepth})${Message} <${Command}> ${ScriptName}:${LineNumber}'
 
             Sets a template that includes indenting based on $CallStackDepth
         .Example
-            Set-TraceMessageTemplate '$("{0:mm\:ss\.fff}" -f ${Elapsed})$(" " * ${CallStackDepth})${Message} <${Command}> ${ScriptName}:${LineNumber}'
+            Set-InfoTemplate '$("{0:mm\:ss\.fff}" -f ${Elapsed})$(" " * ${CallStackDepth})${Message} <${Command}> ${ScriptName}:${LineNumber}'
 
             Sets a template which applies formatting to the elapsed time, to shorten it.
         .Example
-            Set-TraceMessageTemplate '$e[38;5;1m${Elapsed}$("  " * ${CallStackDepth})$e[38;5;6m${Message} $e[38;5;5m<${Command}> ${ScriptName}:${LineNumber}$e[39m'
+            Set-InfoTemplate '$e[38;5;1m${Elapsed}$("  " * ${CallStackDepth})$e[38;5;6m${Message} $e[38;5;5m<${Command}> ${ScriptName}:${LineNumber}$e[39m'
 
             Sets a template with ANSI escape sequences for color and indenting based on $CallStackDepth
         .Example
-            Set-TraceMessageTemplate '${Env:UserName}@${Env:ComputerName} $e[38;5;1m$("{0:hh\:mm\:ss\.fff}" -f ${Time}) $("  " * ${CallStackDepth})$e[38;5;6m${Message} $e[38;5;5m<${Command}> ${ScriptName}:${LineNumber}$e[39m'
+            Set-InfoTemplate '${Env:UserName}@${Env:ComputerName} $e[38;5;1m$("{0:hh\:mm\:ss\.fff}" -f ${Time}) $("  " * ${CallStackDepth})$e[38;5;6m${Message} $e[38;5;5m<${Command}> ${ScriptName}:${LineNumber}$e[39m'
 
             Sets a template which includes the user and computer name, as well as using the actual time -- useful for logging across remote jobs.
     #>
@@ -50,5 +50,5 @@ function Set-TraceMessageTemplate {
         $Template
     )
 
-    [TraceMessage]::MessageTemplate = $Template
+    [TraceInformation]::InfoTemplate = $Template
 }

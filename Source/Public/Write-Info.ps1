@@ -1,4 +1,4 @@
-function Write-Trace {
+function Write-Info {
     <#
         .Synopsis
             An enhancement to the built-in Write-Information to make it show the calling script line
@@ -6,17 +6,17 @@ function Write-Trace {
             Writes messages to the Information stream with callstack and tags, optionally echoing to the debug stream.
             Messages echoed to the debug stream are only written when debugging is enabled (so they'll be visible) and can be filtered by tags.
         .Example
-            Write-Trace "Enter Get-MyFunctionName"
+            Write-Info "Enter Get-MyFunctionName"
 
             Writes a message to the information stream
         .Example
             function Test-Information {
                 [CmdletBinding()]param($Name, $Age)
-                Write-Trace 'Enter Test-Information' -Tag 'Trace','Enter'
+                Write-Info 'Enter Test-Information' -Tag 'Trace','Enter'
 
                 # do stuff
 
-                Write-Trace 'Exit Test-Information' -Tag 'Trace','Exit'
+                Write-Info 'Exit Test-Information' -Tag 'Trace','Exit'
             }
 
             $InformationTracePreference = "CallStack"
@@ -45,7 +45,7 @@ function Write-Trace {
     )
     begin {
         if($StartTime) {
-            [TraceMessage]::StartTime = $StartTime
+            [TraceInformation]::StartTime = $StartTime
         }
 
         if(!${global:Pre-Trace Timer Prompt}) {
@@ -53,7 +53,7 @@ function Write-Trace {
             ${global:Pre-Trace Timer Prompt} = ${function:global:prompt}
 
             ${function:global:prompt} = {
-                [TraceMessage]::StartTime = [DateTimeOffset]::MinValue
+                [TraceInformation]::StartTime = [DateTimeOffset]::MinValue
                 ${function:global:prompt} = ${global:Pre-Trace Timer Prompt}
                 & ${global:Pre-Trace Timer Prompt}
                 Remove-Variable -Scope Global -Name "Pre-Trace Timer Prompt"
@@ -68,7 +68,7 @@ function Write-Trace {
         if($Specified = (Get-PSCallStack).Where({ $_.GetFrameVariables().ContainsKey("DebugPreference")},1)) {
             $DebugPreference = $Specified.GetFrameVariables()["DebugPreference"].Value
         }
-        # Write-Trace always treats Debug as either Silent or Contine -- never inquire or any of that
+        # Write-Info always treats Debug as either Silent or Contine -- never inquire or any of that
         if($DebugPreference -notin "SilentlyContinue","Ignore") {
             $DebugPreference = "Continue"
         }
@@ -77,7 +77,10 @@ function Write-Trace {
     process {
         # The main point of this wrapper is to put the line number into the Source:
         ${Your CallStack} = Get-PSCallStack | Select-Object -Skip 1
-        ${Trace Message} = New-TraceMessageInformationRecord $MessageData ${Your CallStack} $Tags
+        if($PSCmdlet.MyInvocation.InvocationName -eq "Write-Host") {
+            $Tags = @("PSHOST") + $Tags
+        }
+        ${Trace Message} = New-TraceInformation -MessageData $MessageData -CallStack ${Your CallStack} -Tags $Tags
         $PSCmdlet.WriteInformation(${Trace Message})
 
         if($DebugPreference -eq "Continue") {

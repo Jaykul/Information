@@ -5,13 +5,20 @@ Given 'I set DebugFilterInclude to (:?"(.*)",?)+' {
     $global:DebugFilterInclude = $Tags | % { $_.Trim('"') }
 }
 
-When 'I call Write-Trace ["''](.*)["''](?: -Tags ([^ ]+)+)?' {
+BeforeEachFeature {
+    Remove-Variable InformationStream -Scope Global -ErrorAction Ignore
+    Remove-Variable InformationStream -Scope Script -ErrorAction Ignore
+    Remove-Variable InformationStream -Scope Local -ErrorAction Ignore
+}
+
+
+When 'I call Write-Info ["''](.*)["''](?: -Tags ([^ ]+)+)?' {
     param($Message, [string[]]$Tags)
     $P = @{
         MessageData = $Message
         Tags = $Tags
     }
-    Write-Trace -Debug @P -InformationVariable +InformationStream -OutVariable +DebugStream 5>&1 | Out-Null
+    Write-Info -Debug @P -InformationVariable +InformationStream -OutVariable +DebugStream 5>&1 | Out-Null
 }
 
 Then 'the information stream should have (\d+) items?' {
@@ -27,7 +34,7 @@ Then 'the debug stream should have (\d+) items?' {
 Then '(?n)the Message(Data)? should (?<operator>[^ ]+) ["''](?<message>.*)["'']' {
     param($operator, $message)
     # Note this syntax is now considered "legacy" for should
-    $InformationStream.MessageData[-1] | Should $operator $message
+    $InformationStream.MessageData[-1].ToString() | Should $operator $message
 }
 
 Then 'the debug text should ([^ ]+) "(.*)"' {
@@ -36,23 +43,23 @@ Then 'the debug text should ([^ ]+) "(.*)"' {
     $DebugStream.Message | Should $operator $message
 }
 
-When "I call Set-TraceMessageTemplate '(.*)'$" {
+When "I call Set-InfoTemplate '(.*)'$" {
     param($Template)
-    Information\Set-TraceMessageTemplate $Template
+    Information\Set-InfoTemplate $Template
 }
 
-Then "the TraceMessageTemplate is '(.*)'" {
+Then "the TraceInfoTemplate is '(.*)'" {
     param($Template)
-    [TraceMessage]::MessageTemplate | Should Be $Template
+    [TraceInformation]::InfoTemplate | Should Be $Template
 }
 
-When "I wrap Protect-Trace around code that throws an exception" {
-    $InformationStream = Protect-Trace {
-        Write-Trace "Start Test"
-        Get-ChildItem NoSuchFile -EA Stop
-    } -ea SilentlyContinue
+When "I wrap Trace-Info around code that throws an exception" {
+    Trace-Info {
+        Write-Host "Start Test"
+        throw "Simple String Error"
+    } -InformationVariable InformationStream -InformationAction SilentlyContinue -CatchException
 }
 
 Then "the information stream should have exceptions in it" {
-    $InformationStream | Where Tags -eq Exception | Should Not BeNullOrEmpty
+    $InformationStream | Where Tags -match Error | Should Not BeNullOrEmpty
 }

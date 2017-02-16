@@ -2,5 +2,4 @@
 
 The core functionality is a wrappers for writing to the Information stream, and formatting the data from the Information stream.
 
-For instance, Write-Trace writes to the Information (and optionally also the Debug) stream, and adds CallStack information to each output.
-
+For instance, Write-Info writes to the Information (and optionally also the Debug) stream, and adds CallStack information to each output.

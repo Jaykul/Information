@@ -6,11 +6,11 @@
 #>
 [CmdletBinding()]param()
 # Imagine this is a legacy script, and there was a lot of Write-Verbose or Write-Debug
-Set-Alias Write-Verbose Write-Trace
+Set-Alias Write-Verbose Write-Info
 # Write-Host man cause problems, because it has:
 # -ForegroundColor -BackgroundColor and -NoNewLine
-# And those are not implemented on Write-Trace
-Set-Alias Write-Host Write-Trace
+# And those are not implemented on Write-Info
+Set-Alias Write-Host Write-Info
 
 
 Write-Host "Enter $PSCommandPath"

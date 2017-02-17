@@ -16,16 +16,15 @@ if($DebugPreference -ne "SilentlyContinue") { $DebugPreference = "Continue"}
 foreach ($loop in 1..10) { Start-Sleep -Milliseconds 100; Write-Info "Loop $loop" }
 
 Invoke-Command @RemoteArgs {
-    param($InfoTemplate, [DateTimeOffset]$StartTime, [System.Management.Automation.ActionPreference]$PassThruPreference)
+    param( [System.Management.Automation.ActionPreference]$PassThruPreference)
     # Preference variables don't pass through Invoke-Command
     $DebugPreference = $PassThruPreference
 
     Import-Module Information
-    Set-InfoTemplate $InfoTemplate
     Write-Info "Passing StopWatch" -StartTime $StartTime
 
     # Call the other example script
     & (Join-Path (Get-Module Information).ModuleBase "Examples\TraceDelayed.ps1") -StartTime $StartTime
-} -Args ([TraceInformation]::InfoTemplate, [TraceInformation]::StartTime, $DebugPreference)
+} -Args $DebugPreference
 
 Write-Info "Exit $PSCommandPath" -Tag Exit, Trace

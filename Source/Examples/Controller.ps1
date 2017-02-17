@@ -36,10 +36,9 @@ foreach($Server in $ComputerName) {
     # Turn it into a local path
     $FileName = $FileName -replace '\\\\[^\\]*\\(.*)\$\\','$1:\'
     Write-Host "Invoke the script $FileName remotely on $Server"
-    Invoke-Command -ComputerName $Server -Credential $Credential -ArgumentList $FileName, $ArgumentList, (Get-InfoTemplate) {
-        param($FileName, $ArgumentList, $InfoTemplate)
+    Invoke-Command -ComputerName $Server -Credential $Credential -ArgumentList $FileName, $ArgumentList {
+        param($FileName, $ArgumentList)
         Import-Module (Join-Path (Split-Path $FileName) Information\Information.psd1)
-        Set-InfoTemplate $InfoTemplate
         Trace-Info {
             Push-Location (Split-Path $FileName)
             &$FileName @ArgumentList

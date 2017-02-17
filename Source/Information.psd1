@@ -4,7 +4,7 @@
 RootModule = 'Information.psm1'
 
 # Version number of this module.
-ModuleVersion = '0.4.0'
+ModuleVersion = '0.5.0'
 
 # ID used to uniquely identify this module
 GUID = '775a34c4-0c58-4836-9176-25fd2dc31f64'
@@ -66,7 +66,19 @@ PrivateData = @{
         # IconUri = ''
 
         # ReleaseNotes of this module
-        # ReleaseNotes = ''
+        ReleaseNotes = '
+            0.5.0
+            Added a Deserializer to TraceInformation so that remote TraceInformation can be rendered with the local InformationTemplate
+            This means that we no longer need to pass the StartTime or the InfoTemplate to remote computers.
+            Updated samples accordingly
+
+            0.4.0
+            Major refactor, rename existing functions to create a new, consistent sent of nouns
+            Add Trace-Info to wrap calls to functions and alias Write-Host
+
+            0.3.0
+            Added a Deserializer for DataTimeOffset so that we can pass the "StartTime" to remote computers for consistent "elpsed" time.
+        '
 
     } # End of PSData hashtable
 

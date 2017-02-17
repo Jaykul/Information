@@ -1,10 +1,11 @@
 #requires -Version "4.0" -Module PackageManagement, Configuration, Pester
 using namespace System.Windows.Markup
-if(!(Get-Command Write-Trace -ListImported -ErrorAction Ignore)) {
-    Set-Alias Write-Trace Write-Host
-}
-# First call to Write-Trace, pass in our TraceTimer to make sure we time EVERYTHING.
-Write-Trace "BUILDING: $ModuleName in $PSScriptRoot"
+[CmdletBinding()]
+param($Step = $('clean','update','build','test'))
+
+
+# First call to Write-Host, pass in our TraceTimer to make sure we time EVERYTHING.
+Write-Host "BUILDING: $ModuleName in $PSScriptRoot"
 
 $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
@@ -52,7 +53,7 @@ function init {
         Write-Warning "This Build script expects a 'Source' or '$ModuleName' folder to be alongside it."
         throw "Can't find module source folder."
     }
-    Write-Trace "SourcePath: $SourcePath"
+    Write-Host "SourcePath: $SourcePath"
 
     $Script:ManifestPath = Join-Path $SourcePath "${ModuleName}.psd1" -Resolve -ErrorAction Ignore
     if(!$ManifestPath) {
@@ -99,19 +100,19 @@ function clean {
         [Switch]$Packages
     )
 
-    Write-Trace "OUTPUT Release Path: $ReleasePath"
+    Write-Host "OUTPUT Release Path: $ReleasePath"
     if(Test-Path $ReleasePath) {
-        Write-Trace "       Clean up old build"
-        Write-Trace "DELETE $ReleasePath\"
+        Write-Host "       Clean up old build"
+        Write-Host "DELETE $ReleasePath\"
         Remove-Item $ReleasePath -Recurse -Force
     }
     if(Test-Path $Path\packages) {
-        Write-Trace "DELETE $Path\packages"
+        Write-Host "DELETE $Path\packages"
         # force reinstall by cleaning the old ones
         Remove-Item $Path\packages\ -Recurse -Force
     }
     if(Test-Path $Path\packages\build.log) {
-        Write-Trace "DELETE $OutputPath\build.log"
+        Write-Host "DELETE $OutputPath\build.log"
         Remove-Item $OutputPath\build.log -Recurse -Force
     }
 
@@ -137,7 +138,7 @@ function update {
     )
     $ErrorActionPreference = "Stop"
     Set-StrictMode -Version Latest
-    Write-Trace "UPDATE $ModuleName in $Path"
+    Write-Host "UPDATE $ModuleName in $Path"
 
     if(Test-Path (Join-Path $Path packages.config)) {
         if(!($Name = Get-PackageSource | ? Location -eq 'https://www.nuget.org/api/v2' | % Name)) {
@@ -153,7 +154,7 @@ function update {
 
         # Remember, as of now, only nuget actually supports the -Destination flag
         foreach($Package in ([xml](gc .\packages.config)).packages.package) {
-            Write-Trace "Installing $($Package.id) v$($Package.version) from $($Package.Source)"
+            Write-Host "Installing $($Package.id) v$($Package.version) from $($Package.Source)"
             $install = Install-Package -Name $Package.id -RequiredVersion $Package.version -Source $Package.Source -Destination $Path\packages -Force:$Force -ErrorVariable failure
             if($failure) {
                 throw "Failed to install $($package.id), see errors above."
@@ -169,11 +170,11 @@ function build {
     [DependsOn("update")]
     [CmdletBinding()]
     param()
-    Write-Trace "BUILDING: $ModuleName from $Path"
+    Write-Host "BUILDING: $ModuleName from $Path"
     # Copy NuGet dependencies
     $PackagesConfig = (Join-Path $Path packages.config)
     if(Test-Path $PackagesConfig) {
-        Write-Trace "       Copying Packages"
+        Write-Host "       Copying Packages"
         foreach($Package in ([xml](Get-Content $PackagesConfig)).packages.package) {
             $LibPath = "$ReleasePath\lib"
             $folder = Join-Path $Path "packages\$($Package.id)*"
@@ -192,7 +193,7 @@ function build {
                 throw "Could not find a lib folder for $($Package.id) from package. You may need to run Setup.ps1"
             }
 
-            Write-Trace "robocopy $PackageSource $LibPath /E /NP /LOG+:'$OutputPath\build.log' /R:2 /W:15"
+            Write-Host "robocopy $PackageSource $LibPath /E /NP /LOG+:'$OutputPath\build.log' /R:2 /W:15"
             $null = robocopy $PackageSource $LibPath /E /NP /LOG+:"$OutputPath\build.log" /R:2 /W:15
             if($LASTEXITCODE -ne 0 -and $LASTEXITCODE -ne 1 -and $LASTEXITCODE -ne 3) {
                 throw "Failed to copy Package $($Package.id) (${LASTEXITCODE}), see build.log for details"
@@ -204,7 +205,7 @@ function build {
     ## Copy PowerShell source Files (support for my new Public|Private folders, and the old simple copy way)
     # if the Source folder has "Public" and optionally "Private" in it, then the psm1 must be assembled:
     if(Test-Path (Join-Path $SourcePath Public) -Type Container){
-        Write-Trace "       Collating Module Source"
+        Write-Host "       Collating Module Source"
         $RootModule = Get-Metadata -Path $ManifestPath -PropertyName RootModule -ErrorAction SilentlyContinue
         if(!$RootModule) {
             $RootModule = Get-Metadata -Path $ManifestPath -PropertyName ModuleToProcess -ErrorAction SilentlyContinue
@@ -215,7 +216,7 @@ function build {
         $null = mkdir $ReleasePath -Force
         $ReleaseModule = Join-Path $ReleasePath ${RootModule}
         $FunctionsToExport = Join-Path $SourcePath Public\*.ps1 -Resolve | % { [System.IO.Path]::GetFileNameWithoutExtension($_) }
-        Write-Trace "       Setting content for $ReleaseModule from $(Resolve-Path $SourcePath -Relative)"
+        Write-Host "       Setting content for $ReleaseModule from $(Resolve-Path $SourcePath -Relative)"
 
         Set-Content $ReleaseModule $(
             @(
@@ -238,8 +239,8 @@ function build {
         Update-Manifest $ReleaseManifest -Property FunctionsToExport -Value $FunctionsToExport
     } else {
         # Legacy modules just have "stuff" in the source folder and we need to copy all of it
-        Write-Trace "       Copying Module Source"
-        Write-Trace "COPY   $SourcePath\"
+        Write-Host "       Copying Module Source"
+        Write-Host "COPY   $SourcePath\"
         $null = robocopy $SourcePath\  $ReleasePath /E /NP /LOG+:"$OutputPath\build.log" /R:2 /W:15
         if($LASTEXITCODE -ne 3 -AND $LASTEXITCODE -ne 1) {
             throw "Failed to copy Module (${LASTEXITCODE}), see build.log for details"
@@ -253,13 +254,13 @@ function build {
         $null = mkdir $LanguagePath -Force
         $about_module = Join-Path $LanguagePath "about_${ModuleName}.help.txt"
         if(!(Test-Path $about_module)) {
-            Write-Trace "Turn readme into about_module"
+            Write-Host "Turn readme into about_module"
             Copy-Item -LiteralPath $ReadMe -Destination $about_module
         }
     }
 
     ## Update the PSD1 Version:
-    Write-Trace "       Update Module Version"
+    Write-Host "       Update Module Version"
     Push-Location $ReleasePath
     try {
         $FileList = Get-ChildItem -Recurse -File | Resolve-Path -Relative
@@ -270,7 +271,7 @@ function build {
     } finally {
         Pop-Location
     }
-    (Get-Module $ReleaseManifest -ListAvailable | Out-String -stream) -join "`n" | Write-Trace
+    (Get-Module $ReleaseManifest -ListAvailable | Out-String -stream) -join "`n" | Write-Host
 }
 
 function test {
@@ -292,8 +293,8 @@ function test {
         $TestPath = $Path
     }
 
-    Write-Trace "TESTING: $ModuleName with $TestPath"
-    Write-Trace "TESTING $ModuleName v$Version" -Verbose:(!$Quiet)
+    Write-Host "TESTING: $ModuleName with $TestPath"
+    Write-Host "TESTING $ModuleName v$Version" -Verbose:(!$Quiet)
     Remove-Module $ModuleName -ErrorAction Ignore
 
     $Options = @{
@@ -316,7 +317,7 @@ function test {
 
     # TODO: Update dependency to Pester 4.0 and use just Invoke-Pester
     if(Get-Command Invoke-Gherkin -ErrorAction SilentlyContinue) {
-        Write-Host Invoke-Gherkin -Path $TestPath -CodeCoverage "$ReleasePath\*.psm1" -PassThru @Options
+        Write-Host "Invoke-Gherkin -Path $TestPath -CodeCoverage `"$ReleasePath\*.psm1`" -PassThru @Options"
         $TestResults = Invoke-Gherkin -Path $TestPath -CodeCoverage "$ReleasePath\*.psm1" -PassThru @Options
     }
 
@@ -353,9 +354,9 @@ function test {
             if(Test-Path Variable:CodeCovToken) #${CodeCovToken})
             {
                 # TODO: https://github.com/PoshCode/PSGit/blob/dev/test/Send-CodeCov.ps1
-                Write-Trace "Sending CI Code-Coverage Results" -Verbose:(!$Quiet)
+                Write-Host "Sending CI Code-Coverage Results" -Verbose:(!$Quiet)
                 $response = &"$TestPath\Send-CodeCov" -CodeCoverage $result.CodeCoverage -RepositoryRoot $Path -OutputPath $OutputPath -Token ${CodeCovToken}
-                Write-Trace $response.message -Verbose:(!$Quiet)
+                Write-Host $response.message -Verbose:(!$Quiet)
             }
         }
     }
@@ -368,11 +369,11 @@ function test {
 
     if(${JobID}) {
         if(Test-Path $Options.OutputFile) {
-            Write-Trace "Sending Test Results to AppVeyor backend" -Verbose:(!$Quiet)
+            Write-Host "Sending Test Results to AppVeyor backend" -Verbose:(!$Quiet)
             $wc = New-Object 'System.Net.WebClient'
             $response = $wc.UploadFile("https://ci.appveyor.com/api/testresults/nunit/${JobID}", $Options.OutputFile)
             if($response) {
-                Write-Trace ([System.Text.Encoding]::ASCII.GetString($response)) -Verbose:(!$Quiet)
+                Write-Host ([System.Text.Encoding]::ASCII.GetString($response)) -Verbose:(!$Quiet)
             }
         } else {
             Write-Warning "Couldn't find Test Output: $($Options.OutputFile)"
@@ -381,7 +382,7 @@ function test {
 
     if($FailedTestsCount -gt $FailLimit) {
         $exception = New-Object AggregateException "Failed Scenarios:`n`t`t'$($TestResults.FailedScenarios.Name -join "'`n`t`t'")'"
-        $errorRecord = New-Object System.Management.Automation.ErrorRecord $exception, "FailedScenarios", "LimitsExceeded", $Results
+        $errorRecord = New-Object System.Management.Automation.ErrorRecord $exception, "FailedScenarios", "LimitsExceeded", $TestResults
         $PSCmdlet.ThrowTerminatingError($errorRecord)
     }
 }
@@ -391,13 +392,13 @@ function package {
     [CmdletBinding()]
     param()
 
-    Write-Trace "robocopy '$ReleasePath' '${OutputPath}\${ModuleName}' /MIR /NP "
+    Write-Host "robocopy '$ReleasePath' '${OutputPath}\${ModuleName}' /MIR /NP "
     $null = robocopy $ReleasePath "${OutputPath}\${ModuleName}" /MIR /NP /LOG+:"$OutputPath\build.log"
 
     $zipFile = Join-Path $OutputPath "${ModuleName}-${Version}.zip"
     Add-Type -assemblyname System.IO.Compression.FileSystem
     Remove-Item $zipFile -ErrorAction SilentlyContinue
-    Write-Trace "ZIP    $zipFile"
+    Write-Host "ZIP    $zipFile"
     [System.IO.Compression.ZipFile]::CreateFromDirectory((Join-Path $OutputPath $ModuleName), $zipFile)
 
     # You can add other artifacts here
@@ -408,12 +409,10 @@ Push-Location $PSScriptRoot
 
 init
 
-foreach($s in 'clean','update','build','test'){
-    Write-Trace "Invoking Step: $s"
+foreach($s in $Step){
+    Write-Host "Invoking Step: $s"
     & $s
 }
 
 Pop-Location
 Write-Host "FINISHED: $ModuleName in $Path"
-
-Remove-Item Alias:Write-Trace -ErrorAction Ignore

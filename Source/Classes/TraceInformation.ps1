@@ -1,7 +1,6 @@
 class TraceInformation {
     # This holds the original object that's passed in
     [PSObject]$MessageData
-    [String]$Message
 
     # The CallStack
     [Array]$CallStack
@@ -10,7 +9,7 @@ class TraceInformation {
     [DateTimeOffset]$TimeGenerated = [DateTimeOffset]::Now
     [TimeSpan]$ElapsedTime
     [TimeSpan]$Time
-
+    [String]$Message
     [string]$FunctionName
     [string]$ScriptPath
     [int]$LineNumber
@@ -19,8 +18,6 @@ class TraceInformation {
     [string]$Arguments
     [string]$ScriptName
     [int]$CallStackDepth
-
-
 
     # A holder for the start time
     static [DateTimeOffset]$StartTime = [DateTimeOffset]::MinValue

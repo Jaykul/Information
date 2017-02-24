@@ -4,7 +4,7 @@ Feature: Trace-Info
     So that I can understand problems and fix them
 
     Background:
-        Given I call Set-InfoTemplate '`${Time} `${Message}'
+        Given I call Set-InfoTemplate '`${ClockTime} `${Message}'
 
     Scenario: I need to call code which may throw an exception
         When I wrap Trace-Info around code that throws an exception

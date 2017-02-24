@@ -59,7 +59,7 @@ function Trace-Info {
             }
         }
 
-        # To make logging convenient, we convert Errors into TraceInformations:
+        # To make logging convenient, we convert Errors into Information.InformationMessages:
         $Max = $TraceExceptionLog.Count - 1
         :convertErrors foreach($e in 0..$Max) {
             if($TraceExceptionLog[$e] -isnot [System.Management.Automation.InformationRecord]) {
@@ -78,12 +78,8 @@ function Trace-Info {
                 ## Replace the original with an InformationRecord
                 # Write-Warning "Logged Error on (${Env:ComputerName}) $($TraceExceptionLog[$e])"
                 # $TraceExceptionLog[$e] = Write-ErrorInfo $TraceExceptionLog[$e] -Passthru -InformationVariable +TraceExceptionLog
-                Write-ErrorInfo $TraceExceptionLog[$e] -InformationVariable +TraceExceptionLog -Prefix "ERROR LOG:"
+                $TraceExceptionLog[$e] = Write-ErrorInfo $TraceExceptionLog[$e] -Prefix "ERROR LOG:" -Passthru
             }
-        }
-
-        if(!$CatchException -and $ErrorRecord) {
-            throw $ErrorRecord
         }
         if($LogPath) {
             $TraceExceptionLog | Export-Clixml -Depth 4 -Path $LogPath
@@ -92,5 +88,8 @@ function Trace-Info {
             $TraceExceptionLog
         }
         Remove-Item Alias:Write-Host # Write-Info
+        if(!$CatchException -and $ErrorRecord) {
+            throw $ErrorRecord
+        }
     }
 }

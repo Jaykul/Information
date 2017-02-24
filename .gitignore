@@ -5,7 +5,9 @@
 # Ignore version number folders (these are our intermediate "output" directories for testing)
 /[0-9]*/
 # ignore PSTools for VisualStudio files and folders
-/bin/*
-/obj/*
+.vs/
+.vscode/
+bin/
+obj/
 *.suo
 Source/Examples/TraceException.ps1.log.clixml

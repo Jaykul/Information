@@ -45,7 +45,7 @@ function Write-Info {
     )
     begin {
         if($StartTime) {
-            [TraceInformation]::StartTime = $StartTime
+            [Information.InformationMessage]::StartTime = $StartTime
         }
 
         if(!${global:Pre-Trace Timer Prompt}) {
@@ -53,7 +53,7 @@ function Write-Info {
             ${global:Pre-Trace Timer Prompt} = ${function:global:prompt}
 
             ${function:global:prompt} = {
-                [TraceInformation]::StartTime = [DateTimeOffset]::MinValue
+                [Information.InformationMessage]::StartTime = [DateTimeOffset]::MinValue
                 ${function:global:prompt} = ${global:Pre-Trace Timer Prompt}
                 & ${global:Pre-Trace Timer Prompt}
                 Remove-Variable -Scope Global -Name "Pre-Trace Timer Prompt"
@@ -80,7 +80,7 @@ function Write-Info {
         if($PSCmdlet.MyInvocation.InvocationName -eq "Write-Host") {
             $Tags = @("PSHOST") + $Tags
         }
-        ${Trace Message} = New-TraceInformation -MessageData $MessageData -CallStack ${Your CallStack} -Tags $Tags
+        ${Trace Message} = New-InformationMessage -MessageData $MessageData -CallStack ${Your CallStack} -Tags $Tags
         $PSCmdlet.WriteInformation(${Trace Message})
 
         if($DebugPreference -eq "Continue") {

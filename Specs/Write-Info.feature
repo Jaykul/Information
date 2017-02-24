@@ -4,7 +4,7 @@ Feature: Write-Info
     So that I can trace execution and locate problems
 
     Background:
-        Given I call Set-InfoTemplate '`${Time} `${Message}'
+        Given I call Set-InfoTemplate '`${ClockTime} `${Message}'
 
     Scenario: Simple Trace to Information
         When I call Write-Info "Hello World"

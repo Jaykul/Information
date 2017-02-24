@@ -50,7 +50,7 @@ When "I call Set-InfoTemplate '(.*)'$" {
 
 Then "the TraceInfoTemplate is '(.*)'" {
     param($Template)
-    [TraceInformation]::InfoTemplate | Should Be $Template
+    [Information.InformationMessage]::InfoTemplate | Should Be $Template
 }
 
 When "I wrap Trace-Info around code that throws an exception" {

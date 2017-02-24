@@ -1,3 +1,4 @@
+#requires -Module Information
 #.Synopsis
 #   Copy a script to a remote session and invoke it
 [CmdletBinding()]
@@ -24,6 +25,7 @@ $Guid = [Guid]::NewGuid().Guid
 
 foreach($Server in $ComputerName) {
     $RemotePath = "\\$Server\C`$\Temp\$Guid"
+    New-PSDrive -Name 'Remote Test' -PSProvider FileSystem -Root '\\$Server\C$' -Credential $Credential
     $null = mkdir $RemotePath -Force
 
     $FileName = Join-Path $RemotePath (Split-Path $ScriptPath -Leaf)

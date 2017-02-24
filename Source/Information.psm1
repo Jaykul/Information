@@ -30,7 +30,7 @@ class DateTimeOffsetDeserializer : System.Management.Automation.PSTypeConverter 
 Update-TypeData -TypeName DateTimeOffset -TargetTypeForDeserialization DateTimeOffsetDeserializer -Force
 
 
-class TraceInformation {
+class Information.InformationMessage {
     # This holds the original object that's passed in
     [PSObject]$MessageData
     [String]$Message
@@ -65,11 +65,11 @@ class TraceInformation {
                                       })
 
     # The only constructor takes the message and the CallStack as parameters
-    TraceInformation([PSObject]$MessageData, [Array]$CallStack, [string]$Prefix, [bool]$Simple){
+    Information.InformationMessage([PSObject]$MessageData, [Array]$CallStack, [string]$Prefix, [bool]$Simple){
         $this.init([PSObject]$MessageData, [Array]$CallStack, [string]$Prefix, [bool]$Simple)
     }
 
-    TraceInformation([PSObject]$MessageData, [Array]$CallStack){
+    Information.InformationMessage([PSObject]$MessageData, [Array]$CallStack){
         $this.init([PSObject]$MessageData, [Array]$CallStack, $null, $false)
     }
 
@@ -81,18 +81,18 @@ class TraceInformation {
         } else {
             $this.CallStack = $CallStack
         }
-        if([DateTimeOffset]::MinValue -eq [TraceInformation]::StartTime) {
-            [TraceInformation]::StartTime = $this.TimeGenerated
+        if([DateTimeOffset]::MinValue -eq [Information.InformationMessage]::StartTime) {
+            [Information.InformationMessage]::StartTime = $this.TimeGenerated
         }
 
-        $this.ElapsedTime = $this.TimeGenerated - [TraceInformation]::StartTime
+        $this.ElapsedTime = $this.TimeGenerated - [Information.InformationMessage]::StartTime
 
         # These are the things I can imagine wanting in the debug message
         $this.Message = ([PSCustomObject]@{Data=$this.MessageData} | Format-Table -HideTableHeaders -AutoSize | Out-String).Trim()
         if($this.MessageData -is [String]) {
             $this.Message = $this.MessageData.Trim("`r","`n")
             if($this.Message -match "\n") {
-                $this.Message += "`n" + (" " * [regex]::Match([TraceInformation]::InfoTemplate,'\${?message',"IgnoreCase").Index)
+                $this.Message += "`n" + (" " * [regex]::Match([Information.InformationMessage]::InfoTemplate,'\${?message',"IgnoreCase").Index)
             }
         }
 
@@ -147,7 +147,7 @@ class TraceInformation {
             }
 
             # Render the nested errors directly into the message
-            $width = [TraceInformation]::ExceptionWidth
+            $width = [Information.InformationMessage]::ExceptionWidth
             $level = 1
             while($ErrorRecord) {
                 if($level -eq 1) {
@@ -192,7 +192,7 @@ class TraceInformation {
         $local:CallStackDepth = $this.CallStackDepth
 
         try {
-            return (Get-Variable ExecutionContext -ValueOnly).InvokeCommand.ExpandString( [TraceInformation]::InfoTemplate )
+            return (Get-Variable ExecutionContext -ValueOnly).InvokeCommand.ExpandString( [Information.InformationMessage]::InfoTemplate )
         } catch {
             Write-Warning $_
             return "{0} {1} at {2}" -f $this.Time, $this.Message, $this.Location
@@ -200,7 +200,7 @@ class TraceInformation {
     }
 }
 
-Update-TypeData -TypeName TraceInformation -SerializationMethod 'AllPublicProperties' -SerializationDepth 4 -Force
+Update-TypeData -TypeName Information.InformationMessage -SerializationMethod 'AllPublicProperties' -SerializationDepth 4 -Force
 Update-TypeData -TypeName System.Management.Automation.InformationRecord -SerializationMethod 'AllPublicProperties' -SerializationDepth 6 -Force
 
 

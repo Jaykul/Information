@@ -68,7 +68,7 @@ PrivateData = @{
         # ReleaseNotes of this module
         ReleaseNotes = '
             0.5.0
-            Added a Deserializer to TraceInformation so that remote TraceInformation can be rendered with the local InformationTemplate
+            Added a Deserializer to Information.InformationMessage so that remote Information.InformationMessage can be rendered with the local InformationTemplate
             This means that we no longer need to pass the StartTime or the InfoTemplate to remote computers.
             Updated samples accordingly
 

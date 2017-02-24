@@ -1,4 +1,4 @@
-function New-TraceInformation {
+function New-InformationMessage {
     [CmdletBinding()]
     param(
         # Object or message to write to the Information stream
@@ -21,7 +21,8 @@ function New-TraceInformation {
         $CallStack = $CallStack.ForEach{ $_ -split "[\r?\n]+" }
     }
 
-    ${Trace Message} = [TraceInformation]::new($MessageData, $CallStack, $Prefix, $Simple)
+    ${Trace Message} = [Information.InformationMessage]::new($MessageData, $CallStack, $Prefix, $Simple)
+    ${Trace Message}.Message = ([PSCustomObject]@{Data=$MessageData} | Format-Table -HideTableHeaders -AutoSize | Out-String).Trim()
     ${Information Record} = [InformationRecord]::new(${Trace Message}, "$(@($CallStack)[0])")
 
     foreach($Tag in $Tags) { ${Information Record}.Tags.Add($Tag) }

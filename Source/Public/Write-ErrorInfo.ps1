@@ -38,8 +38,9 @@ function Write-ErrorInfo {
         $Ex = $Ex.InnerException
     } while($Ex.InnerException)
 
-    $Info = New-TraceInformation @Information_Record
-    if($Passthru) { $Info } else { $PSCmdlet.WriteInformation($Info) }
+    $Info = New-InformationMessage @Information_Record
+    $PSCmdlet.WriteInformation($Info)
+    if($Passthru) { $Info }
 
     # Make sure this error shows up in the error stream (as the last error)
     if($WriteError) {

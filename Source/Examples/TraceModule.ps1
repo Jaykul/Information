@@ -2,7 +2,6 @@
 [CmdletBinding()]param($RemoteArgs = @{})
 Write-Info "Enter $PSCommandPath" -Tag Enter, Trace
 
-
 New-Module -Name "My Custom Module" {
 
     function Invoke-ModuleFunction {

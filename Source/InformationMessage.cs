@@ -10,16 +10,6 @@ using System.Text.RegularExpressions;
 namespace Information {
     public class InformationMessage {
         /// <summary>
-        /// If set, shows the exception stack
-        /// </summary>
-        public bool ShowException { get; private set; }
-
-        /// <summary>
-        /// A prefix to use when converting to string
-        /// </summary>
-        public string Prefix { get; private set; }
-
-        /// <summary>
         /// Keep track of when the current invocation started
         /// </summary>
         public static DateTimeOffset StartTime { get; set; }
@@ -36,14 +26,29 @@ namespace Information {
         {
             StartTime = DateTimeOffset.MinValue;
             ExceptionWidth = 120;
-            InfoTemplate = @"$('{0:hh\:mm\:ss\.fff}' -f ${Time})$(' ' * $CallStackDepth)${Message} <${Command}> ${ScriptName}:${LineNumber}";
+            InfoTemplate = "{ClockTime}{Indent}{Message} <{Command}> {ScriptName}:{LineNumber}";
         }
+        /// <summary>
+        /// A prefix to use when converting to string
+        /// </summary>
+        public string PSComputerName { get; private set; }
+
+        /// <summary>
+        /// If set, shows the exception stack
+        /// </summary>
+        public bool ShowException { get; private set; }
+
+        /// <summary>
+        /// A prefix to use when converting to string
+        /// </summary>
+        public string Prefix { get; private set; }
 
         // The mandatory constructor parameters
         /// <summary>
         /// The original message object passed to Write-Info
         /// </summary>
         public PSObject MessageData { get; set; }
+
         /// <summary>
         /// The (script) callstack at the point of creation
         /// </summary>
@@ -54,6 +59,16 @@ namespace Information {
             get { return _callstack; }
             set {
                 _callstack = value;
+                if ((_callstack is string[]))
+                {
+                    var stack = new List<string>();
+                    foreach (string frames in _callstack)
+                    {
+                        stack.AddRange(frames.Split(new char[] { '\r', '\n' }, options: StringSplitOptions.RemoveEmptyEntries));
+                    }
+                    _callstack = stack.ToArray();
+                }
+
                 var frame = _callstack.GetValue(0) as CallStackFrame;
                 if (null != frame)
                 {
@@ -63,7 +78,7 @@ namespace Information {
 
                     if (null == frame.InvocationInfo)
                     {
-                        Command = frame.FunctionName;
+                        Command = FunctionName;
                     }
                     else
                     {
@@ -78,7 +93,7 @@ namespace Information {
                         }
                         else
                         {
-                            Command = frame.FunctionName;
+                            Command = FunctionName;
                         }
                     }
 
@@ -113,6 +128,10 @@ namespace Information {
                  }
             }
         }
+        /// <summary>
+        /// The call stack depth (mostly for the purpose of indenting in the <see cref="InfoTemplate"/>)
+        /// </summary>
+        public int CallStackDepth { get { return CallStack.Length; } }
 
         // The Time is here so we can use it in the InfoTemplate
         /// <summary>
@@ -122,7 +141,7 @@ namespace Information {
         /// <summary>
         /// The difference between the time this was generated and the start time
         /// </summary>
-        public TimeSpan ElapsedTime { get { return StartTime - GeneratedDateTime; } }
+        public TimeSpan ElapsedTime { get { return GeneratedDateTime - StartTime; } }
         /// <summary>
         /// The Time portion of TimeGenerated
         /// </summary>
@@ -169,13 +188,10 @@ namespace Information {
         /// The command the information was written from
         /// </summary>
         public string Command { get; private set; }
-        /// <summary>
-        /// The call stack depth (mostly for the purpose of indenting in the <see cref="InfoTemplate"/>)
-        /// </summary>
-        public int CallStackDepth { get { return CallStack.Length; } }
 
         public InformationMessage(PSObject messageData, Array callStack, string prefix = "", bool simple = false)
         {
+            PSComputerName = Environment.GetEnvironmentVariable("ComputerName");
             ShowException = !simple;
             Prefix = prefix ?? "";
             GeneratedDateTime = DateTimeOffset.Now;
@@ -187,20 +203,8 @@ namespace Information {
             {
                 MessageData = messageData;
             }
-
-            if ((callStack is string[]))
-            {
-                var stack = new List<string>();
-                foreach (string frame in callStack)
-                {
-                    stack.AddRange(frame.Split(new char[] { '\r', '\n' }, options: StringSplitOptions.RemoveEmptyEntries));
-                }
-                CallStack = stack.ToArray();
-            }
-            else
-            {
-                CallStack = callStack;
-            }
+            
+            CallStack = callStack;
 
             if (DateTimeOffset.MinValue == StartTime)
             {
@@ -211,101 +215,155 @@ namespace Information {
         public override string ToString()
         {
             var msg = new StringBuilder();
-            if (!string.IsNullOrEmpty(Prefix)) {
-                msg.Append(Prefix);
-            }
+            if(MessageData.BaseObject is string)
+            {
+                if (!string.IsNullOrEmpty(Prefix)) {
+                    msg.Append(Prefix);
+                }
 
-            if (!(MessageData.BaseObject is string))
-            {
-                if (!string.IsNullOrEmpty(Prefix))
-                {
-                    if (MessageData.BaseObject is RemotingErrorRecord)
-                    {
-                        msg.Append("REMOTE ERROR: ");
-                    }
-                    else if (MessageData.BaseObject is ErrorRecord)
-                    {
-                        msg.Append("ERROR: ");
-                    }
-                    else if (MessageData.BaseObject is Exception)
-                    {
-                        msg.Append("EXCEPTION: ");
-                    }
-                }
-                foreach (var property in MessageData.Properties)
-                {
-                    msg.AppendFormat("{0} ", property.Value);
-                }
-            }
-            else
-            {
                 var stringMessage = MessageData.BaseObject.ToString().Trim();
                 msg.Append(stringMessage);
+
                 if (stringMessage.Contains("\n"))
                 {
                     msg.Append("\n        ");
                 }
+                Message = msg.ToString();
+                return ExpandTemplate();
             }
 
-            if (ShowException) {
-                PSObject err = null;
-
-                if (MessageData.BaseObject is ErrorRecord || MessageData.BaseObject is Exception)
+            if (string.IsNullOrEmpty(Prefix))
+            {
+                if (MessageData.TypeNames.Any(name => name.Contains("System.Management.Automation.RemotingErrorRecord")))
                 {
-                    err = MessageData;
-                    msg.Append("\n\n");
+                    msg.Append("REMOTE ERROR: ");
                 }
+                else if (MessageData.TypeNames.Any(name => name.Contains("System.Management.Automation.ErrorRecord")))
+                {
+                    msg.Append("ERROR: ");
+                }
+                else if (MessageData.TypeNames.Any(name => name.Contains("Exception")))
+                {
+                    msg.Append("EXCEPTION: ");
+                }
+            }
+            else
+            {
+                    msg.Append(Prefix);
+            }
 
-                // Render the nested errors directly into the message
-                var width = ExceptionWidth;
-                var level = 1;
-                while (null != err) {
-                    Exception next = null;
-
-                    msg.AppendFormat("{0}[{1}]\n", " ".PadLeft(level), err.TypeNames[0]);
-                    foreach (var property in err.Properties)
+            // This has to work with both Exceptions and Deserialized Exceptions
+            if (ShowException) {
+                msg.Append(ExpandException(MessageData));
+            }
+            else
+            {
+                msg.AppendFormat("[[{0}]]\n\n", MessageData.BaseObject.GetType().FullName);
+                foreach (var property in MessageData.Properties)
+                {
+                    // This list is types which aren't worth displaying without a label
+                    if (!(property.Value is Boolean || property.Value is Byte || property.Value is SByte || property.Value is Char || property.Value is Single || property.Value is Int16 || property.Value is UInt16 || property.Value is Int32 || property.Value is UInt32 || property.Value is Int64 || property.Value is UInt64 || property.Value is Double || property.Value is Decimal))
                     {
-                        if (property.Name == "Exception" || property.Name == "InnerException")
-                        {
-                            next = property.Value as Exception;
-                        }
-                        msg.AppendFormat("{0}{1}: {2}\n", " ".PadLeft(level), property.Name, property.Value);
+                        msg.AppendFormat("{0} ", property.Value);
                     }
-                    msg.AppendLine("`n`n`n");
-
-                    err = next != null ? new PSObject(next) : null;
-                    level++;
-                    width -= 4;
                 }
             }
 
             Message = msg.ToString();
 
-            var message = InfoTemplate;
-            
-            message = Regex.Replace(message, @"\${ClockTime(?::(.+?))?}", m => ClockTime.ToString(m.Groups[1].Value.Replace(":",@"\:").Replace(".", @"\.").Replace("-", @"\-")), RegexOptions.IgnoreCase);
-            message = Regex.Replace(message, @"\${ElapsedTime(?::(.+?))?}", m => ElapsedTime.ToString(m.Groups[1].Value.Replace(":", @"\:").Replace(".", @"\.").Replace("-", @"\-")), RegexOptions.IgnoreCase);
-            message = Regex.Replace(message, @"\${GeneratedDateTime(?::(.+?))?}", m => GeneratedDateTime.ToString(m.Groups[1].Value.Replace(":", @"\:").Replace(".", @"\.").Replace("-", @"\-")), RegexOptions.IgnoreCase);
+            return ExpandTemplate();
+        }
 
-            message = Regex.Replace(message, @"\${CallStack}", CallStack.ToString(), RegexOptions.IgnoreCase);
-            message = Regex.Replace(message, @"\${Command}", Command.ToString(), RegexOptions.IgnoreCase);
-            message = Regex.Replace(message, @"\${FunctionName}", FunctionName.ToString(), RegexOptions.IgnoreCase);
-            message = Regex.Replace(message, @"\${Indent}", " ".PadLeft(CallStackDepth * 2), RegexOptions.IgnoreCase);
-            message = Regex.Replace(message, @"\${LineNumber}", LineNumber.ToString(), RegexOptions.IgnoreCase);
-            message = Regex.Replace(message, @"\${Location}", Location.ToString(), RegexOptions.IgnoreCase);
-            message = Regex.Replace(message, @"\${Message}", Message.ToString(), RegexOptions.IgnoreCase);
-            message = Regex.Replace(message, @"\${ScriptName}", ScriptName.ToString(), RegexOptions.IgnoreCase);
-            message = Regex.Replace(message, @"\${ScriptPath}", ScriptPath.ToString(), RegexOptions.IgnoreCase);
-            message = Regex.Replace(message, @"\${TimeGenerated}", GeneratedDateTime.ToString(), RegexOptions.IgnoreCase);
-
-            var env = Environment.GetEnvironmentVariables();
-            foreach (var ev in env.Keys)
+        public static string ExpandException(PSObject error)
+        {
+            var msg = new StringBuilder();
+            if (!error.TypeNames.Any(name => name.Contains("System.Management.Automation.ErrorRecord") || name.Contains("System.Exception")))
             {
-                message = Regex.Replace(message, @"\${Env:" + ev + "}", (string)env[ev], RegexOptions.IgnoreCase);
+                msg.AppendFormat("[[{0}]]\n\n", error.BaseObject.GetType().FullName);
+                foreach (var property in error.Properties)
+                {
+                    // This list is types which aren't worth displaying without a label
+                    if (!(property.Value is Boolean || property.Value is Byte || property.Value is SByte || property.Value is Char || property.Value is Single || property.Value is Int16 || property.Value is UInt16 || property.Value is Int32 || property.Value is UInt32 || property.Value is Int64 || property.Value is UInt64 || property.Value is Double || property.Value is Decimal))
+                    {
+                        msg.AppendFormat("{0} ", property.Value);
+                    }
+                }
+            }
+            
+            msg.AppendLine(error.Properties.Any(p => p.Name == "Exception") ?
+                            new PSObject(error.Properties.First(p => p.Name == "Exception").Value).Properties.First(p => p.Name == "Message").Value.ToString() :
+                            error.Properties.First(p => p.Name == "Message").Value.ToString());
+            msg.AppendLine();
+
+            // Render the nested errors directly into the message
+            var width = ExceptionWidth;
+            var level = 1;
+            while (null != error)
+            {
+                Exception next = null;
+                var stackTrace = new StringBuilder();
+                msg.AppendFormat("{0}[{1}]\n\n", " ".PadLeft(level * 4), error.BaseObject.GetType().FullName);
+                // I'm hard-coding skipping this one property because it's name is long and it's pointless
+                var left = error.Properties.Max(p => p.Name.Contains("WasThrownFromThrowStatement") ? 0 : p.Name.Length);
+                foreach (var property in error.Properties)
+                {
+                    if (string.IsNullOrWhiteSpace("" + property.Value) || property.Name == "WasThrownFromThrowStatement")
+                    {
+                        continue;
+                    }
+
+                    if (property.Name == "Exception" || property.Name == "InnerException")
+                    {
+                        next = property.Value as Exception;
+                    }
+                    else if (property.Name.EndsWith("StackTrace"))
+                    {
+                        // we track the stacktrace separately so we can put it last, because it's multi-line
+                        var value = ("" + property.Value).Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+
+                        stackTrace.AppendLine(" ".PadLeft(level * 4) + (property.Name).PadRight(left) + " : " + value.First());
+
+                        foreach (var additional in value.Skip(1))
+                        {
+                            stackTrace.AppendLine(" ".PadLeft((level * 4) + left + 3 ) + additional.Trim());
+                        }
+                    }
+                    else
+                    {
+                        msg.AppendLine(" ".PadLeft(level * 4) + (property.Name).PadRight(left) + " : " + property.Value);
+                    }
+                }
+                // Stick a blank line on the end ... after the stackTrace
+                msg.AppendLine(stackTrace.ToString());
+                msg.Append(" ".PadLeft((level * 4) + left + 3));
+
+                error = next != null ? new PSObject(next) : null;
+                level++;
+                width -= 4;
             }
 
-            message = Regex.Replace(message, @"\${e}", "\u001b", RegexOptions.IgnoreCase);
-            message = Regex.Replace(message, @"\$e\b", "\u001b", RegexOptions.IgnoreCase);
+            return msg.ToString();
+        }
+
+        private string ExpandTemplate() {
+            var message = InfoTemplate;
+
+            message = Regex.Replace(message, @"{ClockTime(?::(.+?))?}", m => ClockTime.ToString(m.Groups[1].Value.Replace(":",@"\:").Replace(".", @"\.").Replace("-", @"\-")), RegexOptions.IgnoreCase);
+            message = Regex.Replace(message, @"{ElapsedTime(?::(.+?))?}", m => ElapsedTime.ToString(m.Groups[1].Value.Replace(":", @"\:").Replace(".", @"\.").Replace("-", @"\-")), RegexOptions.IgnoreCase);
+            message = Regex.Replace(message, @"{GeneratedDateTime(?::(.+?))?}", m => GeneratedDateTime.ToString(m.Groups[1].Value.Replace(":", @"\:").Replace(".", @"\.").Replace("-", @"\-")), RegexOptions.IgnoreCase);
+
+            message = Regex.Replace(message, @"{PSComputerName}", PSComputerName.ToString(), RegexOptions.IgnoreCase);
+            message = Regex.Replace(message, @"{CallStack}", CallStack.ToString(), RegexOptions.IgnoreCase);
+            message = Regex.Replace(message, @"{Command}", Command.ToString(), RegexOptions.IgnoreCase);
+            message = Regex.Replace(message, @"{FunctionName}", FunctionName.ToString(), RegexOptions.IgnoreCase);
+            message = Regex.Replace(message, @"{Indent}", " ".PadLeft(CallStackDepth * 2), RegexOptions.IgnoreCase);
+            message = Regex.Replace(message, @"{LineNumber}", LineNumber.ToString(), RegexOptions.IgnoreCase);
+            message = Regex.Replace(message, @"{Location}", Location.ToString(), RegexOptions.IgnoreCase);
+            message = Regex.Replace(message, @"{Message}", Message.ToString(), RegexOptions.IgnoreCase);
+            message = Regex.Replace(message, @"{ScriptName}", ScriptName.ToString(), RegexOptions.IgnoreCase);
+            message = Regex.Replace(message, @"{ScriptPath}", ScriptPath.ToString(), RegexOptions.IgnoreCase);
+            message = Regex.Replace(message, @"{TimeGenerated}", GeneratedDateTime.ToString(), RegexOptions.IgnoreCase);
+
             message = Regex.Replace(message, @"`e", "\u001b", RegexOptions.IgnoreCase);
 
             return message;

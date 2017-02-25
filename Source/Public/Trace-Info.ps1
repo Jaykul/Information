@@ -42,7 +42,8 @@ function Trace-Info {
         if($PSBoundParameters.ContainsKey('DebugFilterExclude')) {
             $Script:DebugFilterExclude = $DebugFilterExclude
         }
-        Set-Alias Write-Host Write-Info -Scope Global -Option AllScope
+        Set-Alias Write-Host Write-Trace -Scope Global -Option AllScope
+        Set-Alias Write-Trace Write-Info -Scope Global -Option AllScope
     }
 
     end {
@@ -69,7 +70,7 @@ function Trace-Info {
                     foreach($r in 0..($e-1)) {
                         if($TraceExceptionLog[$r].MessageData.MessageData.Exception.Message -eq $ErrorRecord.MessageData.MessageData.Exception.Message -and
                            $TraceExceptionLog[$r].MessageData.MessageData.Exception.ErrorDetails_ScriptStackTrace -eq $ErrorRecord.MessageData.MessageData.Exception.ScriptStackTrace) {
-                            Write-ErrorInfo $TraceExceptionLog[$e] -Simple -InformationVariable +TraceExceptionLog -Prefix "REMOTE ERROR LOG:"
+                            # Write-ErrorInfo $TraceExceptionLog[$e] -Simple -InformationVariable +TraceExceptionLog -Prefix "REMOTE ERROR LOG:"
                             continue convertErrors
                         }
                     }
@@ -78,7 +79,7 @@ function Trace-Info {
                 ## Replace the original with an InformationRecord
                 # Write-Warning "Logged Error on (${Env:ComputerName}) $($TraceExceptionLog[$e])"
                 # $TraceExceptionLog[$e] = Write-ErrorInfo $TraceExceptionLog[$e] -Passthru -InformationVariable +TraceExceptionLog
-                $TraceExceptionLog[$e] = Write-ErrorInfo $TraceExceptionLog[$e] -Prefix "ERROR LOG:" -Passthru
+                $TraceExceptionLog[$e] = Write-ErrorInfo $TraceExceptionLog[$e] -Prefix "ERROR LOG: " -Passthru
             }
         }
         if($LogPath) {
@@ -87,7 +88,8 @@ function Trace-Info {
         if($Passthru) {
             $TraceExceptionLog
         }
-        Remove-Item Alias:Write-Host # Write-Info
+        Remove-Item Alias:Write-Host
+        Remove-Item Alias:Write-Trace
         if(!$CatchException -and $ErrorRecord) {
             throw $ErrorRecord
         }

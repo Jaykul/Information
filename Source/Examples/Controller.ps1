@@ -24,8 +24,9 @@ Write-Host "Start Remote Test"
 $Guid = [Guid]::NewGuid().Guid
 
 foreach($Server in $ComputerName) {
-    $RemotePath = "\\$Server\C`$\Temp\$Guid"
-    New-PSDrive -Name 'Remote Test' -PSProvider FileSystem -Root '\\$Server\C$' -Credential $Credential
+    $RemotePath = "Remote TestDrive:\Temp\$Guid"
+    $LocalPath  = "C:\Temp\$Guid"
+    $null = New-PSDrive -Name 'Remote TestDrive' -PSProvider FileSystem -Root "\\$Server\C$"
     $null = mkdir $RemotePath -Force
 
     $FileName = Join-Path $RemotePath (Split-Path $ScriptPath -Leaf)
@@ -36,7 +37,8 @@ foreach($Server in $ComputerName) {
     Copy-Item (Get-Module Information).ModuleBase -Destination $RemotePath\Information -Recurse
 
     # Turn it into a local path
-    $FileName = $FileName -replace '\\\\[^\\]*\\(.*)\$\\','$1:\'
+    $FileName = $FileName -replace ([regex]::Escape($RemotePath)), $LocalPath
+
     Write-Host "Invoke the script $FileName remotely on $Server"
     Invoke-Command -ComputerName $Server -Credential $Credential -ArgumentList $FileName, $ArgumentList {
         param($FileName, $ArgumentList)
@@ -48,6 +50,7 @@ foreach($Server in $ComputerName) {
     }
     Write-Host "Clean up remote files"
     Remove-Item $RemotePath -Recurse
+    #Remove-PSDrive "Remote TestsDrive"
 }
 
 Write-Host "End Remote Test"

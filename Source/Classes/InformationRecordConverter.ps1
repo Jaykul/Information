@@ -5,7 +5,7 @@ class InformationRecordConverter : System.Management.Automation.PSTypeConverter
     [bool] CanConvertFrom([PSObject]$psSourceValue, [Type]$destinationType)
     {
         return $psSourceValue.PSTypeNames.Contains("Deserialized.System.Management.Automation.InformationRecord") -and
-               $psSourceValue.MessageData.TypeNames.Contains("Deserialized.Information.InformationMessage")
+               $psSourceValue.MessageData.PSTypeNames.Contains("Deserialized.Information.InformationMessage")
     }
 
     [object] ConvertFrom([PSObject]$psSourceValue, [Type]$destinationType, [IFormatProvider]$formatProvider, [bool]$ignoreCase)
@@ -18,7 +18,7 @@ class InformationRecordConverter : System.Management.Automation.PSTypeConverter
     [bool] CanConvertFrom([object]$sourceValue, [Type]$destinationType)
     {
         return ([PSObject]$sourceValue).PSTypeNames.Contains("Deserialized.System.Management.Automation.InformationRecord") -and
-               ([PSObject]$sourceValue).MessageData.TypeNames.Contains("Deserialized.Information.InformationMessage")-and
+               ([PSObject]$sourceValue).MessageData.PSTypeNames.Contains("Deserialized.Information.InformationMessage")-and
                $destinationType -eq "System.Management.Automation.InformationRecord"
     }
 
@@ -33,7 +33,7 @@ class InformationRecordConverter : System.Management.Automation.PSTypeConverter
     [bool] CanConvertTo([object]$sourceValue, [Type]$destinationType)
     {
         return ([PSObject]$sourceValue).PSTypeNames.Contains("Deserialized.System.Management.Automation.InformationRecord") -and
-               ([PSObject]$sourceValue).MessageData.TypeNames.Contains("Deserialized.Information.InformationMessage") -and
+               ([PSObject]$sourceValue).MessageData.PSTypeNames.Contains("Deserialized.Information.InformationMessage") -and
                $destinationType -eq "System.Management.Automation.InformationRecord"
     }
 

@@ -2,13 +2,13 @@ class InformationMessageConverter : System.Management.Automation.PSTypeConverter
 {
     [bool] CanConvertFrom([PSObject]$psSourceValue, [Type]$destinationType)
     {
-        Write-Warning "CanConvertFrom $($psSourceValue.PSTypeNames)"
+        # Write-Warning "CanConvertFrom $($psSourceValue.PSTypeNames)"
         return $psSourceValue.PSTypeNames.Contains("Deserialized.Information.InformationMessage")
     }
 
     [object] ConvertFrom([PSObject]$psSourceValue, [Type]$destinationType, [IFormatProvider]$formatProvider, [bool]$ignoreCase)
     {
-        Write-Warning "ConvertFrom $($psSourceValue.PSTypeNames)"
+        # Write-Warning "ConvertFrom $($psSourceValue.PSTypeNames)"
         $Properties = @{}
         if($psSourceValue.TimeGenerated -as [DateTimeOffset]) { $Properties.TimeGenerated = $psSourceValue.TimeGenerated -as [DateTimeOffset] }
         # if($psSourceValue.FunctionName-as [string]) { $Properties.FunctionName = $psSourceValue.FunctionName-as [string] }

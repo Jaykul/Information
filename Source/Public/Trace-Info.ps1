@@ -56,9 +56,11 @@ function Trace-Info {
             # Attempt to remove duplicates (seems to always happen for exceptions)
             $ErrorRecord = $_
 
-            if(($null -eq (Compare-Object $TraceExceptionLog[-3] $ErrorRecord -Property $ErrorRecord.GetType().GetProperties().Name)) -and
-               ($null -eq (Compare-Object $TraceExceptionLog[-1] $ErrorRecord -Property $ErrorRecord.GetType().GetProperties().Name))) {
-                $TraceExceptionLog = $TraceExceptionLog[0..$($TraceExceptionLog.Count-4)]
+            if($TraceExceptionLog.Count -ge 3) {
+                if(($null -eq (Compare-Object $TraceExceptionLog[-3] $ErrorRecord -Property $ErrorRecord.GetType().GetProperties().Name)) -and
+                ($null -eq (Compare-Object $TraceExceptionLog[-1] $ErrorRecord -Property $ErrorRecord.GetType().GetProperties().Name))) {
+                    $TraceExceptionLog = $TraceExceptionLog[0..$($TraceExceptionLog.Count-4)]
+                }
             }
 
             if($null -eq (Compare-Object $TraceExceptionLog[-1] $ErrorRecord -Property $ErrorRecord.GetType().GetProperties().Name)) {

@@ -328,9 +328,9 @@ namespace Information {
             var left = 0;
             while (null != error)
             {
-                Exception next = null;
+                PSObject next = null;
                 var stackTrace = new StringBuilder();
-                msg.AppendFormat("{0}[{1}]\n\n", " ".PadLeft(level * 4), error.BaseObject.GetType().FullName);
+                msg.AppendFormat("{0}[{1}]\n\n", " ".PadLeft(level * 4), error.TypeNames.First(name => name.Contains("System.Management.Automation.ErrorRecord") || name.Contains("System.Exception")));
                 // I'm hard-coding skipping this one property because it's name is long and it's pointless
                 left = error.Properties.Max(p => p.Name.Contains("WasThrownFromThrowStatement") ? 0 : p.Name.Length);
                 foreach (var property in error.Properties)
@@ -340,9 +340,9 @@ namespace Information {
                         continue;
                     }
 
-                    if (property.Name == "Exception" || property.Name == "InnerException")
+                    if ((property.Name == "Exception" || property.Name == "InnerException") && property.Value != null)
                     {
-                        next = property.Value as Exception;
+                        next = new PSObject( property.Value );
                     }
                     else if (property.Name.EndsWith("StackTrace"))
                     {
@@ -363,7 +363,7 @@ namespace Information {
                 }
                 // Stick a blank line on the end ... after the stackTrace
                 msg.AppendLine(stackTrace.ToString());
-                error = next != null ? new PSObject(next) : null;
+                error = next;
                 level++;
                 width -= 4;
             }

@@ -5,6 +5,10 @@
         In this example we didn't want to call Write-Info upon entry to the script, but we did want to use Elapsed time
         To make sure the elapsed time is accurate, we create the StartTime up front, and then pass it to Write-Info on the first call
         Note: we could set the static [Information.InformationMessage]::StartTime, but that would require importing the type with: using module Information
+    .Example
+        .\StartTimeExample -InformationAction Continue
+
+        Invoke the example and output the Information stream visibly
 #>
 [CmdletBinding()]
 param(

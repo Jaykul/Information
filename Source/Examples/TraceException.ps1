@@ -1,5 +1,14 @@
 #requires -Module Information
 
+# This example shows how Trace-Info works:
+# The core idea is that there's a function which might throw an Exception
+# (in our example, the exception is guaranteed)
+
+# You can wrap the call to the problem function in Trace-Info:
+# Trace-Info guarantees any exceptions will be logged to the Information stream
+# If you specify -LogPath, it exports the Information there
+# If you specify -CatchException, the exception is handled, so your script continues
+
 function Invoke-BrokenThing {
     [CmdletBinding()]
     param (
@@ -33,14 +42,15 @@ function Invoke-BrokenThing {
     }
 }
 
-
-$File = Trace-Info {
+Trace-Info {
     Write-Info "Start Testing"
-
 
     1..10 | Invoke-BrokenThing
 
     Write-Info "Stop Testing" # won't ever happen?
 } -LogPath "$($MyInvocation.MyCommand.Source).log.clixml"
 
-$Log = Import-Clixml -Path $File
+
+# Without CatchException, this wouldn't execute.
+$Log = Import-Clixml -Path "$($MyInvocation.MyCommand.Source).log.clixml"
+$Log

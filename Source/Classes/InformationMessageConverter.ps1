@@ -10,13 +10,12 @@ class InformationMessageConverter : System.Management.Automation.PSTypeConverter
     {
         # Write-Warning "ConvertFrom $($psSourceValue.PSTypeNames)"
         $Properties = @{}
-        if($psSourceValue.TimeGenerated -as [DateTimeOffset]) { $Properties.TimeGenerated = $psSourceValue.TimeGenerated -as [DateTimeOffset] }
-        # if($psSourceValue.FunctionName-as [string]) { $Properties.FunctionName = $psSourceValue.FunctionName-as [string] }
-        # if($psSourceValue.ScriptPath-as [string]) { $Properties.ScriptPath = $psSourceValue.ScriptPath-as [string] }
-        # if($psSourceValue.LineNumber-as [int]) { $Properties.LineNumber = $psSourceValue.LineNumber-as [int] }
-        # if($psSourceValue.Command-as [string]) { $Properties.Command = $psSourceValue.Command-as [string] }
-        # if($psSourceValue.Location-as [PSObject]) { $Properties.Location = $psSourceValue.Location-as [PSObject] }
-        # if($psSourceValue.ScriptName-as [string]) { $Properties.ScriptName = $psSourceValue.ScriptName-as [string] }
+        if($psSourceValue.GeneratedDateTime -as [DateTimeOffset]) { $Properties.GeneratedDateTime = $psSourceValue.GeneratedDateTime -as [DateTimeOffset] }
+        if($psSourceValue.ElapsedTime -as [TimeSpan]) { $Properties.ElapsedTime = $psSourceValue.ElapsedTime -as [TimeSpan] }
+        if($psSourceValue.PSComputerName -as [string]) { $Properties.PSComputerName = $psSourceValue.PSComputerName -as [string] }
+        if($psSourceValue.ShowException -as [bool]) { $Properties.ShowException = $psSourceValue.ShowException -as [bool] }
+        if($psSourceValue.Prefix -as [string]) { $Properties.Prefix = $psSourceValue.Prefix -as [string] }
+
         return New-Object Information.InformationMessage ($psSourceValue.MessageData, $psSourceValue.CallStack) -Property $Properties
     }
 

@@ -7,4 +7,3 @@ For instance, Write-Info writes to the Information (and optionally also the Debu
 # TODO:
 
 [] Fix bug in indent (and callstack?)
-[] Fix bug in prompt (which causes elapsed time not to work)

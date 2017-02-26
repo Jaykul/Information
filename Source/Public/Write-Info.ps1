@@ -48,15 +48,22 @@ function Write-Info {
             [Information.InformationMessage]::StartTime = $StartTime
         }
 
-        if(!${global:Pre-Trace Timer Prompt}) {
+        if(!${script:Pre-Trace Timer Prompt}) {
             # Assume that we should reset the StartTime any time we hit the prompt:
-            Set-Variable "Pre-Trace Timer Prompt" -Value ${function:prompt} -Scope Global
+            ${script:Pre-Trace Timer Prompt} =  ${function:prompt}
 
             ${function:global:prompt} = {
                 [Information.InformationMessage]::StartTime = [DateTimeOffset]::MinValue
-                ${function:global:prompt} = Get-Variable -Scope Global -Name "Pre-Trace Timer Prompt"
-                Remove-Variable -Scope Global -Name "Pre-Trace Timer Prompt"
+                ${function:global:prompt} = ${script:Pre-Trace Timer Prompt}
+                Remove-Variable -Scope Script -Name "Pre-Trace Timer Prompt"
                 & ${function:global:prompt}
+            }
+
+            $MyInvocation.MyCommand.ScriptBlock.Module.OnRemove = {
+                if(${script:Pre-Trace Timer Prompt}) {
+                    ${function:global:prompt} = ${script:Pre-Trace Timer Prompt}
+                    Remove-Variable -Scope Script -Name "Pre-Trace Timer Prompt"
+                }
             }
         }
 

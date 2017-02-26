@@ -55,6 +55,12 @@ function Trace-Info {
         } catch {
             # Attempt to remove duplicates (seems to always happen for exceptions)
             $ErrorRecord = $_
+
+            if(($null -eq (Compare-Object $TraceExceptionLog[-3] $ErrorRecord -Property $ErrorRecord.GetType().GetProperties().Name)) -and
+               ($null -eq (Compare-Object $TraceExceptionLog[-1] $ErrorRecord -Property $ErrorRecord.GetType().GetProperties().Name))) {
+                $TraceExceptionLog = $TraceExceptionLog[0..$($TraceExceptionLog.Count-4)]
+            }
+
             if($null -eq (Compare-Object $TraceExceptionLog[-1] $ErrorRecord -Property $ErrorRecord.GetType().GetProperties().Name)) {
                 $TraceExceptionLog = $TraceExceptionLog[0..$($TraceExceptionLog.Count-2)]
             }
@@ -79,7 +85,7 @@ function Trace-Info {
                 ## Replace the original with an InformationRecord
                 # Write-Warning "Logged Error on (${Env:ComputerName}) $($TraceExceptionLog[$e])"
                 # $TraceExceptionLog[$e] = Write-ErrorInfo $TraceExceptionLog[$e] -Passthru -InformationVariable +TraceExceptionLog
-                $TraceExceptionLog[$e] = Write-ErrorInfo $TraceExceptionLog[$e] -Prefix "ERROR LOG: " -Passthru
+                $TraceExceptionLog[$e] = Write-ErrorInfo $TraceExceptionLog[$e] -Passthru
             }
         }
         if($LogPath) {

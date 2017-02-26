@@ -28,7 +28,7 @@ Invoke-Command @RemoteArgs {
     Write-Info "No need to pass the StopWatch?"
 
     # Call the other example script
-    & (Join-Path (Get-Module Information).ModuleBase "Examples\TraceDelayed.ps1")
+    & (Join-Path (Get-Module Information).ModuleBase "Examples\SimpleExample.ps1")
 } -Args $DebugPreference
 
 Write-Info "Exit $PSCommandPath" -Tag Exit, Trace

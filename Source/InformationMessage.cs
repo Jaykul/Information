@@ -13,10 +13,12 @@ namespace Information {
         /// Keep track of when the current invocation started
         /// </summary>
         public static DateTimeOffset StartTime { get; set; }
+
         /// <summary>
         /// Track the console display width
         /// </summary>
         public static int ExceptionWidth { get; set; }
+
         /// <summary>
         /// The template for formatting the display string
         /// </summary>
@@ -28,20 +30,52 @@ namespace Information {
             ExceptionWidth = 120;
             InfoTemplate = "{ClockTime}{Indent}{Message} <{Command}> {ScriptName}:{LineNumber}";
         }
+
         /// <summary>
         /// A prefix to use when converting to string
         /// </summary>
-        public string PSComputerName { get; private set; }
+        public string PSComputerName { get; set; }
 
         /// <summary>
         /// If set, shows the exception stack
         /// </summary>
-        public bool ShowException { get; private set; }
+        public bool ShowException { get; set; }
 
         /// <summary>
         /// A prefix to use when converting to string
         /// </summary>
-        public string Prefix { get; private set; }
+        public string Prefix { get; set; }
+
+        // The Time is here so we can use it in the InfoTemplate
+        /// <summary>
+        /// The full date and time when this message was generated
+        /// </summary>
+        private DateTimeOffset _generatedDateTime;
+        public DateTimeOffset GeneratedDateTime
+        {
+            get
+            {
+                return _generatedDateTime;
+            }
+            set
+            {
+                _generatedDateTime = value;
+                if (DateTimeOffset.MinValue == StartTime)
+                {
+                    StartTime = _generatedDateTime;
+                }
+                ElapsedTime = _generatedDateTime - StartTime;
+            }
+        }
+
+        /// <summary>
+        /// The difference between the time this was generated and the start time
+        /// </summary>
+        public TimeSpan ElapsedTime { get; set; }
+        /// <summary>
+        /// The Time portion of TimeGenerated
+        /// </summary>
+        public TimeSpan ClockTime { get { return GeneratedDateTime.TimeOfDay; } }
 
         // The mandatory constructor parameters
         /// <summary>
@@ -133,20 +167,6 @@ namespace Information {
         /// </summary>
         public int CallStackDepth { get { return CallStack.Length; } }
 
-        // The Time is here so we can use it in the InfoTemplate
-        /// <summary>
-        /// The full date and time when this message was generated
-        /// </summary>
-        public DateTimeOffset GeneratedDateTime { get; set; }
-        /// <summary>
-        /// The difference between the time this was generated and the start time
-        /// </summary>
-        public TimeSpan ElapsedTime { get { return GeneratedDateTime - StartTime; } }
-        /// <summary>
-        /// The Time portion of TimeGenerated
-        /// </summary>
-        public TimeSpan ClockTime { get { return GeneratedDateTime.TimeOfDay; } }
-
         // Calculated based on the MessageData
         /// <summary>
         /// The display string, based on the InfoTemplate and all the other properties
@@ -158,10 +178,12 @@ namespace Information {
         /// The name of the function the Information was written from
         /// </summary>
         public string FunctionName { get; private set; }
+
         /// <summary>
         /// The script file path the Information was written from
         /// </summary>
         public string ScriptPath { get; private set; }
+
         /// <summary>
         /// The script file name the Information was written from
         /// </summary>
@@ -176,19 +198,29 @@ namespace Information {
                 }
             }
         }
+
         /// <summary>
         /// The line of the script file the Information was written from
         /// </summary>
         public int LineNumber { get; private set; }
+
         /// <summary>
         /// The line position the information was written from
         /// </summary>
         public string Location { get; private set; }
+
         /// <summary>
         /// The command the information was written from
         /// </summary>
         public string Command { get; private set; }
 
+        /// <summary>
+        /// The single constructor, so that messageData and callStack must be passed
+        /// </summary>
+        /// <param name="messageData"></param>
+        /// <param name="callStack"></param>
+        /// <param name="prefix"></param>
+        /// <param name="simple"></param>
         public InformationMessage(PSObject messageData, Array callStack, string prefix = "", bool simple = false)
         {
             PSComputerName = Environment.GetEnvironmentVariable("ComputerName");
@@ -205,11 +237,6 @@ namespace Information {
             }
             
             CallStack = callStack;
-
-            if (DateTimeOffset.MinValue == StartTime)
-            {
-                StartTime = GeneratedDateTime;
-            }
         }
 
         public override string ToString()
@@ -298,13 +325,14 @@ namespace Information {
             // Render the nested errors directly into the message
             var width = ExceptionWidth;
             var level = 1;
+            var left = 0;
             while (null != error)
             {
                 Exception next = null;
                 var stackTrace = new StringBuilder();
                 msg.AppendFormat("{0}[{1}]\n\n", " ".PadLeft(level * 4), error.BaseObject.GetType().FullName);
                 // I'm hard-coding skipping this one property because it's name is long and it's pointless
-                var left = error.Properties.Max(p => p.Name.Contains("WasThrownFromThrowStatement") ? 0 : p.Name.Length);
+                left = error.Properties.Max(p => p.Name.Contains("WasThrownFromThrowStatement") ? 0 : p.Name.Length);
                 foreach (var property in error.Properties)
                 {
                     if (string.IsNullOrWhiteSpace("" + property.Value) || property.Name == "WasThrownFromThrowStatement")
@@ -335,12 +363,11 @@ namespace Information {
                 }
                 // Stick a blank line on the end ... after the stackTrace
                 msg.AppendLine(stackTrace.ToString());
-                msg.Append(" ".PadLeft((level * 4) + left + 3));
-
                 error = next != null ? new PSObject(next) : null;
                 level++;
                 width -= 4;
             }
+            msg.Append(" ".PadLeft((level * 4)));
 
             return msg.ToString();
         }
@@ -348,9 +375,12 @@ namespace Information {
         private string ExpandTemplate() {
             var message = InfoTemplate;
 
-            message = Regex.Replace(message, @"{ClockTime(?::(.+?))?}", m => ClockTime.ToString(m.Groups[1].Value.Replace(":",@"\:").Replace(".", @"\.").Replace("-", @"\-")), RegexOptions.IgnoreCase);
-            message = Regex.Replace(message, @"{ElapsedTime(?::(.+?))?}", m => ElapsedTime.ToString(m.Groups[1].Value.Replace(":", @"\:").Replace(".", @"\.").Replace("-", @"\-")), RegexOptions.IgnoreCase);
-            message = Regex.Replace(message, @"{GeneratedDateTime(?::(.+?))?}", m => GeneratedDateTime.ToString(m.Groups[1].Value.Replace(":", @"\:").Replace(".", @"\.").Replace("-", @"\-")), RegexOptions.IgnoreCase);
+            message = Regex.Replace(message, @"{ClockTime}", ClockTime.ToString(@"hh\:mm\:ss\.ffffff"), RegexOptions.IgnoreCase);
+            message = Regex.Replace(message, @"{ClockTime:(.+?)}", m => ClockTime.ToString(m.Groups[1].Value.Replace(":",@"\:").Replace(".", @"\.").Replace("-", @"\-")), RegexOptions.IgnoreCase);
+            message = Regex.Replace(message, @"{ElapsedTime}", ElapsedTime.ToString(@"hh\:mm\:ss\.ffffff"), RegexOptions.IgnoreCase);
+            message = Regex.Replace(message, @"{ElapsedTime:(.+?)}", m => ElapsedTime.ToString(m.Groups[1].Value.Replace(":", @"\:").Replace(".", @"\.").Replace("-", @"\-")), RegexOptions.IgnoreCase);
+            message = Regex.Replace(message, @"{GeneratedDateTime}", GeneratedDateTime.ToString(), RegexOptions.IgnoreCase);
+            message = Regex.Replace(message, @"{GeneratedDateTime:(.+?)}", m => GeneratedDateTime.ToString(m.Groups[1].Value.Replace(":", @"\:").Replace(".", @"\.").Replace("-", @"\-")), RegexOptions.IgnoreCase);
 
             message = Regex.Replace(message, @"{PSComputerName}", PSComputerName.ToString(), RegexOptions.IgnoreCase);
             message = Regex.Replace(message, @"{CallStack}", CallStack.ToString(), RegexOptions.IgnoreCase);

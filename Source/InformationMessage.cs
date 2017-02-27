@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -267,7 +268,7 @@ namespace Information {
                 }
                 else if (MessageData.TypeNames.Any(name => name.Contains("System.Management.Automation.ErrorRecord")))
                 {
-                    msg.Append("ERROR: ");
+                    msg.Append("MessageData: ");
                 }
                 else if (MessageData.TypeNames.Any(name => name.Contains("Exception")))
                 {
@@ -285,15 +286,24 @@ namespace Information {
             }
             else
             {
-                msg.AppendFormat("[[{0}]]\n\n", MessageData.BaseObject.GetType().FullName);
-                foreach (var property in MessageData.Properties)
+                msg.AppendFormat("[{0}]\n\n", MessageData.TypeNames.First());
+                string MessageDataString;
+                if (LanguagePrimitives.TryConvertTo<string>(MessageData, out MessageDataString))
                 {
-                    // This list is types which aren't worth displaying without a label
-                    if (!(property.Value is Boolean || property.Value is Byte || property.Value is SByte || property.Value is Char || property.Value is Single || property.Value is Int16 || property.Value is UInt16 || property.Value is Int32 || property.Value is UInt32 || property.Value is Int64 || property.Value is UInt64 || property.Value is Double || property.Value is Decimal))
+                    msg.AppendLine(MessageDataString);
+                }
+                else
+                {
+                    foreach (var property in MessageData.Properties)
                     {
-                        msg.AppendFormat("{0} ", property.Value);
+                        // This list is types which aren't worth displaying without a label
+                        if (!(property.Value is Boolean || property.Value is Byte || property.Value is SByte || property.Value is Char || property.Value is Single || property.Value is Int16 || property.Value is UInt16 || property.Value is Int32 || property.Value is UInt32 || property.Value is Int64 || property.Value is UInt64 || property.Value is Double || property.Value is Decimal))
+                        {
+                            msg.AppendFormat("{0} ", property.Value);
+                        }
                     }
                 }
+                return msg.ToString();
             }
 
             Message = msg.ToString();
@@ -306,17 +316,26 @@ namespace Information {
             var msg = new StringBuilder();
             if (!error.TypeNames.Any(name => name.Contains("System.Management.Automation.ErrorRecord") || name.Contains("System.Exception")))
             {
-                msg.AppendFormat("[[{0}]]\n\n", error.BaseObject.GetType().FullName);
-                foreach (var property in error.Properties)
+                msg.AppendFormat("[{0}]\n\n", error.TypeNames.First());
+                string errorString;
+                if(LanguagePrimitives.TryConvertTo<string>(error, out errorString))
                 {
-                    // This list is types which aren't worth displaying without a label
-                    if (!(property.Value is Boolean || property.Value is Byte || property.Value is SByte || property.Value is Char || property.Value is Single || property.Value is Int16 || property.Value is UInt16 || property.Value is Int32 || property.Value is UInt32 || property.Value is Int64 || property.Value is UInt64 || property.Value is Double || property.Value is Decimal))
+                    msg.AppendLine(errorString);
+                }
+                else
+                {
+                    foreach (var property in error.Properties)
                     {
-                        msg.AppendFormat("{0} ", property.Value);
+                        // This list is types which aren't worth displaying without a label
+                        if (!(property.Value is Boolean || property.Value is Byte || property.Value is SByte || property.Value is Char || property.Value is Single || property.Value is Int16 || property.Value is UInt16 || property.Value is Int32 || property.Value is UInt32 || property.Value is Int64 || property.Value is UInt64 || property.Value is Double || property.Value is Decimal))
+                        {
+                            msg.AppendFormat("{0} ", property.Value);
+                        }
                     }
                 }
+                return msg.ToString();
             }
-            
+
             msg.AppendLine(error.Properties.Any(p => p.Name == "Exception") ?
                             new PSObject(error.Properties.First(p => p.Name == "Exception").Value).Properties.First(p => p.Name == "Message").Value.ToString() :
                             error.Properties.First(p => p.Name == "Message").Value.ToString());

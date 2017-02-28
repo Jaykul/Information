@@ -1,4 +1,4 @@
----
+﻿---
 Module Name: Information
 Module Guid: 775a34c4-0c58-4836-9176-25fd2dc31f64
 Download Help Link: {{Please enter FwLink manually}}
@@ -10,17 +10,23 @@ Locale: en-US
 
 ## Description
 
-The Information module is an experiment to provide useful new scenarios for using the Information stream, otherwise only usable via Write-Information.
+The Information module was an experiment to provide useful new scenarios for using the Information stream, which was otherwise only usable via Write-Information.
 
-The core functionality is a wrapper, `Write-Trace` for writing rich object logs to the Information stream,
+The core functionality is two Cmdlets:
 
 ## Information Cmdlets
+### [Write-Info](Write-Info.md)
+A command to replace Write-Host or other logging with tagged and filterable Information stream logging
 
-### [Set-TraceMessageTemplate](Set-TraceMessageTemplate.md)
+### [Trace-Info](Trace-Info.md)
+A command to wrap around scripts to not only support filtering the output for Write-Info and easily logging it, but to ensure capturing full Error information and exception stack traces.
 
-A wrapper for the `[TraceMessage]::MessageTemplate` to support changing the format string for the debug logs.
+### [Write-ErrorInfo](Write-ErrorInfo.md)
+Like Write-Info, but specifically for error objects. This is what's used internally in Trace-Info.
 
-### [Write-Trace](Write-Trace.md)
+### [Set-InfoTemplate](Set-InfoTemplate.md)
+Set a display template for our InformationMessage
 
-A replacement for the built-in Write-Information which adds the call stack and parameter information to the stream, and supports echoing data to the Debug stream as well.
+### [Get-InfoTemplate](Get-InfoTemplate.md)
+Get the current display template for InformationMessage
 

@@ -35,6 +35,7 @@ function Write-Info {
         # Specifies an informational message that you want to display to users as they run a script or command.
         # Note that this is a rich object, and the -InformationVariable can collect those objects, but the stream will just get the ToString()
         [Parameter(Mandatory=$true, Position=0, ValueFromPipeline=$true, ValueFromPipelineByPropertyName=$true)]
+        [Alias("Object")]
         [PSObject]$MessageData,
 
         # Specifies a simple string that you can use to sort and filter messages that you have added to the information stream with Write-Information

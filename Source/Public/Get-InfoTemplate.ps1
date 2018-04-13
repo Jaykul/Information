@@ -5,5 +5,5 @@ function Get-InfoTemplate {
     #>
     [CmdletBinding()]param()
 
-    [Information.InformationMessage]::InfoTemplate
+    [Information.InformationHelper]::InfoTemplate
 }

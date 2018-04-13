@@ -1,0 +1,20 @@
+<Project DefaultTarget="Combine" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <PropertyGroup>
+        <Version>0.6.0</Version>
+        <OutputPath>.\$(Version)</OutputPath>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PowerShellFiles Include="Source\**\*.ps1"/>
+    </ItemGroup>
+
+    <Target Name="Combine" Inputs="@(PowerShellFiles)" Outputs="$(OutputPath)\$(MSBuildProjectName).psm1">
+        <MakeDir Directories="$(OutputPath)"/>
+
+        <ItemGroup>
+            <SourceCode Include="$([System.IO.File]::ReadAllText(%(PowerShellFiles.Identity)))"/>
+        </ItemGroup>
+
+        <WriteLinesToFile File="$(OutputPath)\$(MSBuildProjectName).psm1" Lines="@(SourceCode)" Overwrite="true" Encoding="UTF-8" />
+    </Target>
+</Project>

@@ -1,0 +1,13 @@
+<Types>
+    <Type>
+        <Name>Information.InvocationRecord</Name>
+        <Members>
+            <ScriptMethod>
+                <Name>ToString</Name>
+                <Script>
+                    [Information.InformationHelper]::FormatRecord($_)
+                </Script>
+            </ScriptMethod>
+        </Members>
+    </Type>
+</Types>

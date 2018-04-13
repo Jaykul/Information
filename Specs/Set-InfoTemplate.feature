@@ -28,7 +28,7 @@ Feature: Set-InfoTemplate
             | `{FunctionName}       | Ignored     | Be       | <ScriptBlock>                                     |
             | `{ClockTime:hh-mm.ss} | Ignored     | match    | \d+-\d+.\d+                                       |
             | `{ElapsedTime:mm:ss}  | Ignored     | match    | \d+:\d+                                           |
-            | `{GeneratedDateTime}  | Ignored     | match    | \d+/\d+/\d{4} \d+:\d{2}:\d{2} [AP]M -?\d{2}:\d{2} |
+            | `{GeneratedDateTime}  | Ignored     | match    | \d+/\d+/\d{4} \d+:\d{2}:\d{2}( [AP]M)? -?\d{2}:\d{2} |
             | `{ScriptPath}         | Ignored     | match    | Information\\\\Specs\\\\Information\\.Steps\\.ps1 |
             | `{PSComputerName}     | Ignored     | match    | ${Env:ComputerName}                               |
             | `{ScriptName}         | Ignored     | Be       | Information.Steps.ps1                             |

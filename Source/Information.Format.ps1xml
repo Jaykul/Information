@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- *******************************************************************
+This is Joel "Jaykul" Bennett's coloring format file for PowerShell 5.1
+******************************************************************** -->
+<Configuration>
+    <ViewDefinitions>
+        <View>
+            <Name>InformationLog</Name>
+            <ViewSelectedBy>
+                <TypeName>Information.InvocationRecord</TypeName>
+            </ViewSelectedBy>
+            <CustomControl>
+                <CustomEntries>
+                    <CustomEntry>
+                        <CustomItem>
+                            <Frame>
+                                <!-- <LeftIndent>4</LeftIndent> -->
+                                <CustomItem>
+                                    <!-- <Text>Directory </Text> -->
+                                    <ExpressionBinding>
+                                        <ScriptBlock>
+                                            [Information.InformationHelper]::FormatRecord($_)
+                                        </ScriptBlock>
+                                    </ExpressionBinding>
+                                    <NewLine/>
+                                </CustomItem>
+                            </Frame>
+                        </CustomItem>
+                    </CustomEntry>
+                </CustomEntries>
+            </CustomControl>
+        </View>
+    </ViewDefinitions>
+</Configuration>

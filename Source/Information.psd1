@@ -4,7 +4,7 @@
 RootModule = 'Information.psm1'
 
 # Version number of this module.
-ModuleVersion = '0.5.0'
+ModuleVersion = '0.6.0'
 
 # ID used to uniquely identify this module
 GUID = '775a34c4-0c58-4836-9176-25fd2dc31f64'
@@ -25,16 +25,21 @@ Description = 'Improves on Write-Information and provides new scenarios for the 
 PowerShellVersion = '5.0'
 
 # Type files (.ps1xml) to be loaded when importing this module
-# TypesToProcess = @()
+TypesToProcess = @("Information.Types.ps1xml")
 
 # Format files (.ps1xml) to be loaded when importing this module
-# FormatsToProcess = @()
+FormatsToProcess =  @("Information.Format.ps1xml")
 
-# Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
+# The Write-Info command is in the NestedModule
+NestedModules = @('bin\Information.dll')
+
+# Functions to export from this module
+# for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
 FunctionsToExport = 'Write-Info', 'Trace-Info', 'Set-InfoTemplate'
 
-# Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
-CmdletsToExport = @()
+# Cmdlets to export from this module
+# for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
+CmdletsToExport = @("Write-Info")
 
 # Variables to export from this module
 VariablesToExport = @(

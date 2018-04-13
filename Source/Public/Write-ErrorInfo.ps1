@@ -47,3 +47,5 @@ function Write-ErrorInfo {
         Write-Error -ErrorRecord $ErrorRecord
     }
 }
+
+Export-ModuleMember -Cmdlet * -Function * -Variable DebugFilterInclude, DebugFilterExclude

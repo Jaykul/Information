@@ -35,7 +35,7 @@ function init {
         [String]$CodeCovToken = ${ENV:CODECOV_TOKEN},
 
         # The default language is your current UICulture
-        [Globalization.CultureInfo]$DefaultLanguage = $((Get-Culture).Name)
+        [Globalization.CultureInfo]$DefaultLanguage = 'en-US'
     )
 
 
@@ -162,6 +162,8 @@ function update {
         }
     }
 
+    dotnet restore $Path\Information.csproj
+
     # we also check for git submodules...
     git submodule update --init --recursive
 }
@@ -201,7 +203,6 @@ function build {
         }
     }
 
-
     ## Copy PowerShell source Files (support for my new Public|Private folders, and the old simple copy way)
     # if the Source folder has "Public" and optionally "Private" in it, then the psm1 must be assembled:
     if(Test-Path (Join-Path $SourcePath Public) -Type Container){
@@ -220,9 +221,9 @@ function build {
 
         Set-Content $ReleaseModule $(
             @(
-                (Join-Path $SourcePath Classes\*.ps1 -Resolve -ErrorAction Ignore | Sort).ForEach{ Get-Content $_ -Raw }
-                (Join-Path $SourcePath Private\*.ps1 -Resolve -ErrorAction Ignore | Sort).ForEach{ Get-Content $_ -Raw }
-                (Join-Path $SourcePath Public\*.ps1 -Resolve -ErrorAction Ignore | Sort).ForEach{ Get-Content $_ -Raw }
+                (Join-Path $SourcePath Classes\*.ps1 -Resolve -ErrorAction Ignore | Sort-Object).ForEach{ Get-Content $_ -Raw }
+                (Join-Path $SourcePath Private\*.ps1 -Resolve -ErrorAction Ignore | Sort-Object).ForEach{ Get-Content $_ -Raw }
+                (Join-Path $SourcePath Public\*.ps1 -Resolve -ErrorAction Ignore  | Sort-Object).ForEach{ Get-Content $_ -Raw }
             ) -join "`r`n`r`n`r`n") -Encoding UTF8
 
         # If there are any folders that aren't Public, Private, Tests, or Specs ...
@@ -233,7 +234,7 @@ function build {
 
         # Finally, we need to copy any files in the Source directory
         Get-ChildItem $SourcePath -File |
-            Where Name -ne $RootModule |
+            Where-Object Name -ne $RootModule |
             Copy-Item -Destination $ReleasePath
 
         Update-Manifest $ReleaseManifest -Property FunctionsToExport -Value $FunctionsToExport
@@ -246,6 +247,9 @@ function build {
             throw "Failed to copy Module (${LASTEXITCODE}), see build.log for details"
         }
     }
+
+    # Build binaries to where we need them
+    dotnet build -o $ReleasePath\bin\ -c Release $Path\Information.csproj
 
     # Copy the readme file as an about_ help
     $ReadMe = Join-Path $Path Readme.md

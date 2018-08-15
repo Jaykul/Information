@@ -1,0 +1,10 @@
+# add-type -path C:\Users\Joel\Projects\Modules\Information\Source\Classes\InformationRecord.cs
+ipmo C:\Users\Joel\Projects\Modules\Information\Source\Information.psd1 -Force
+Set-InfoTemplate '`e[38;5;8m{PSComputerName} `e[38;5;1m{ElapsedTime:mm:ss.fff} {Indent}`e[38;5;6m{Message}`e[39m'
+function Get-Example {`
+    [CmdletBinding()]param()`
+    Get-ChildItem -File | Where Length -lt 10kb | Format-Table`
+}
+Get-Example -infa Continue
+Get-Command Get-ChildItem, Where-Object | New-LoggingCommand
+Get-Example -infa Continue

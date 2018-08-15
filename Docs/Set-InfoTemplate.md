@@ -25,7 +25,7 @@ The following placeholders are available:
 {Message}           = A string representation of the $MessageData
 {GeneratedDateTime} = A full DateTimeOffset for when this record was generated
 {ClockTime}         = The TimeOfDay from the DateTimeOffset (A TimeSpan representing when the record was generated)
-{ElapsedTime}       = The elapsed time since the Information.InformationMessage::StartTime
+{ElapsedTime}       = The elapsed time since the start of the pipeline
 
 The three time based fields support formatting by placing it after the field, like: {ClockTime:hh:mm}
 
@@ -39,7 +39,7 @@ the last command in the call stack)
 {ScriptName}     = The name of the running script file
 {LineNumber}     = The line number of the script file
 {Location}       = A pre-formatted Location string
-{PSComputerName} = The computer that generated the original InformationMessage
+{PSComputerName} = The computer that generated the original InformationRecord
 
 \`e               = The escape character (\[char\]27) for ANSI
 
@@ -51,7 +51,7 @@ the last command in the call stack)
 Set-InfoTemplate '{ElapsedTime} {ScriptName}:{LineNumber} {Message}'
 ```
 
-Sets the Information.InformationMessage template to a simple message showing elapsed time, the source, and the message
+Sets the Information.InformationRecord template to a simple message showing elapsed time, the source, and the message
 
 ### -------------------------- EXAMPLE 2 --------------------------
 

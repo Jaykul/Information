@@ -1,210 +1,158 @@
+# WARNING: THIS PSM1 FILE IS REPLACED DURING BUILD
 using namespace System.Management.Automation
 
 [String[]]$DebugFilterInclude = @()
 [String[]]$DebugFilterExclude = @()
 
-class DateTimeOffsetDeserializer : System.Management.Automation.PSTypeConverter {
-
-    [bool] CanConvertFrom([object]$sourceValue, [Type]$destinationType)
-    {
-        return ([PSObject]$sourceValue).TypeNames.Contains("Deserialized.System.DateTimeOffset")
+class DateTimeOffsetConverter : System.Management.Automation.PSTypeConverter {
+    [bool] CanConvertFrom([PSObject]$psSourceValue, [Type]$destinationType) {
+        return $psSourceValue.PSTypeNames.Contains("Deserialized.System.DateTimeOffset")
     }
 
-    [bool] CanConvertTo([object]$sourceValue, [Type]$destinationType)
-    {
-        return ([PSObject]$sourceValue).TypeNames.Contains("Deserialized.System.DateTimeOffset") -and $destinationType -eq "System.DateTimeOffset"
+    [object] ConvertFrom([PSObject]$psSourceValue, [Type]$destinationType, [IFormatProvider]$formatProvider, [bool]$ignoreCase) {
+        return [DateTimeOffset]::new($psSourceValue.Ticks, $psSourceValue.Offset)
     }
 
-    [object] ConvertFrom([object]$sourceValue, [Type]$destinationType, [IFormatProvider]$formatProvider, [bool]$ignoreCase)
-    {
+    # These methods aren't necessary...
+    [bool] CanConvertFrom([object]$sourceValue, [Type]$destinationType) {
+        return ([PSObject]$sourceValue).PSTypeNames.Contains("Deserialized.System.DateTimeOffset")
+    }
+
+    [object] ConvertFrom([object]$sourceValue, [Type]$destinationType, [IFormatProvider]$formatProvider, [bool]$ignoreCase) {
         [PSObject]$psSourceValue = $sourceValue
         return [DateTimeOffset]::new($psSourceValue.Ticks, $psSourceValue.Offset)
     }
 
-    [object] ConvertTo([object]$sourceValue, [Type]$destinationType, [IFormatProvider]$formatProvider, [bool]$ignoreCase)
-    {
+    [bool] CanConvertTo([object]$sourceValue, [Type]$destinationType) {
+        return ([PSObject]$sourceValue).PSTypeNames.Contains("Deserialized.System.DateTimeOffset") -and $destinationType -eq "System.DateTimeOffset"
+    }
+
+    [object] ConvertTo([object]$sourceValue, [Type]$destinationType, [IFormatProvider]$formatProvider, [bool]$ignoreCase) {
         [PSObject]$psSourceValue = $sourceValue
         return [DateTimeOffset]::new($psSourceValue.Ticks, $psSourceValue.Offset)
     }
 }
-Update-TypeData -TypeName DateTimeOffset -TargetTypeForDeserialization DateTimeOffsetDeserializer -Force
+
+Update-TypeData -TypeName 'Deserialized.System.DateTimeOffset' -TargetTypeForDeserialization 'System.DateTimeOffset' -Force
+Update-TypeData -TypeName 'System.DateTimeOffset' -TypeConverter 'DateTimeOffsetConverter' -SerializationDepth 1 -Force
+
+Add-Type -Path $PSScriptRoot\Classes\*.cs
+
+class InformationMessageConverter : System.Management.Automation.PSTypeConverter {
+    [bool] CanConvertFrom([PSObject]$psSourceValue, [Type]$destinationType) {
+        # Write-Warning "CanConvertFrom $($psSourceValue.PSTypeNames)"
+        return $psSourceValue.PSTypeNames.Contains("Deserialized.Information.InformationMessage")
+    }
+
+    [object] ConvertFrom([PSObject]$psSourceValue, [Type]$destinationType, [IFormatProvider]$formatProvider, [bool]$ignoreCase) {
+        # Write-Warning "ConvertFrom $($psSourceValue.PSTypeNames)"
+        $Properties = @{}
+        if ($psSourceValue.GeneratedDateTime -as [DateTimeOffset]) {
+            $Properties.GeneratedDateTime = $psSourceValue.GeneratedDateTime -as [DateTimeOffset]
+        }
+        if ($psSourceValue.ElapsedTime -as [TimeSpan]) {
+            $Properties.ElapsedTime = $psSourceValue.ElapsedTime -as [TimeSpan]
+        }
+        if ($psSourceValue.PSComputerName -as [string]) {
+            $Properties.PSComputerName = $psSourceValue.PSComputerName -as [string]
+        }
+        if ($psSourceValue.ShowException -as [bool]) {
+            $Properties.ShowException = $psSourceValue.ShowException -as [bool]
+        }
+        if ($psSourceValue.Prefix -as [string]) {
+            $Properties.Prefix = $psSourceValue.Prefix -as [string]
+        }
+
+        return New-Object Information.InformationMessage ($psSourceValue.MessageData, $psSourceValue.CallStack) -Property $Properties
+    }
+
+    [bool] CanConvertFrom([object]$sourceValue, [Type]$destinationType) {
+        return $false;
+    }
+
+    [object] ConvertFrom([object]$sourceValue, [Type]$destinationType, [IFormatProvider]$formatProvider, [bool]$ignoreCase) {
+        throw [NotImplementedException]::new();
+    }
+
+    [bool] CanConvertTo([object]$sourceValue, [Type]$destinationType) {
+        throw [NotImplementedException]::new();
+    }
+
+    [object] ConvertTo([object]$sourceValue, [Type]$destinationType, [IFormatProvider]$formatProvider, [bool]$ignoreCase) {
+        throw [NotImplementedException]::new();
+    }
+}
+
+Update-TypeData -TypeName 'Deserialized.Information.InformationMessage' -TargetTypeForDeserialization 'InformationMessageConverter' -Force
+Update-TypeData -TypeName 'InformationMessageConverter' -TypeConverter 'InformationMessageConverter' -SerializationDepth 3 -Force
+Update-TypeData -TypeName 'Information.InformationMessage' -SerializationDepth 4 -Force
+
+class InformationRecordConverter : System.Management.Automation.PSTypeConverter {
+    $InformationMessageConverter = [InformationMessageConverter]::new()
+
+    [bool] CanConvertFrom([PSObject]$psSourceValue, [Type]$destinationType) {
+        return $psSourceValue.PSTypeNames.Contains("Deserialized.System.Management.Automation.InformationRecord") -and
+        $psSourceValue.MessageData.PSTypeNames.Contains("Deserialized.Information.InformationMessage")
+    }
+
+    [object] ConvertFrom([PSObject]$psSourceValue, [Type]$destinationType, [IFormatProvider]$formatProvider, [bool]$ignoreCase) {
+        $MessageData = $this.InformationMessageConverter.ConvertFrom( $psSourceValue.MessageData, $null, $null, $true)
+        return [System.Management.Automation.InformationRecord]::new($MessageData, $MessageData.CallStack)
+    }
 
 
-class Information.InformationMessage {
-    # This holds the original object that's passed in
-    [PSObject]$MessageData
+    [bool] CanConvertFrom([object]$sourceValue, [Type]$destinationType) {
+        return ([PSObject]$sourceValue).PSTypeNames.Contains("Deserialized.System.Management.Automation.InformationRecord") -and
+        ([PSObject]$sourceValue).MessageData.PSTypeNames.Contains("Deserialized.Information.InformationMessage") -and
+        $destinationType -eq "System.Management.Automation.InformationRecord"
+    }
+
+    [object] ConvertFrom([object]$sourceValue, [Type]$destinationType, [IFormatProvider]$formatProvider, [bool]$ignoreCase) {
+        [PSObject]$psSourceValue = $sourceValue
+
+        $MessageData = $this.InformationMessageConverter.ConvertFrom( $psSourceValue.MessageData, $null, $null, $true)
+        return [System.Management.Automation.InformationRecord]::new($MessageData, $MessageData.CallStack)
+    }
+
+    [bool] CanConvertTo([object]$sourceValue, [Type]$destinationType) {
+        return ([PSObject]$sourceValue).PSTypeNames.Contains("Deserialized.System.Management.Automation.InformationRecord") -and
+        ([PSObject]$sourceValue).MessageData.PSTypeNames.Contains("Deserialized.Information.InformationMessage") -and
+        $destinationType -eq "System.Management.Automation.InformationRecord"
+    }
+
+    [object] ConvertTo([object]$sourceValue, [Type]$destinationType, [IFormatProvider]$formatProvider, [bool]$ignoreCase) {
+        [PSObject]$psSourceValue = $sourceValue
+
+        $MessageData = $this.InformationMessageConverter.ConvertFrom( $psSourceValue.MessageData, $null, $null, $true)
+        return [System.Management.Automation.InformationRecord]::new($MessageData, $MessageData.CallStack)
+    }
+}
+
+Update-TypeData -TypeName 'Deserialized.System.Management.Automation.InformationRecord' -TargetTypeForDeserialization 'System.Management.Automation.InformationRecord' -Force
+Update-TypeData -TypeName 'System.Management.Automation.InformationRecord' -TypeConverter 'InformationRecordConverter' -SerializationDepth 6 -Force
+
+class TraceInformation {
     [String]$Message
 
-    # The CallStack
-    [Array]$CallStack
+    [Hashtable]$BoundParameters
 
-    # The Time is here so we can use it in the InfoTemplate
-    [DateTimeOffset]$TimeGenerated = [DateTimeOffset]::Now
-    [TimeSpan]$ElapsedTime
-    [TimeSpan]$Time
-
-    [string]$FunctionName
-    [string]$ScriptPath
-    [int]$LineNumber
-    [string]$Command
-    [PSObject]$Location
-    [string]$Arguments
-    [string]$ScriptName
-    [int]$CallStackDepth
-
-
-
-    # A holder for the start time
-    static [DateTimeOffset]$StartTime = [DateTimeOffset]::MinValue
-    static [int]$ExceptionWidth = 120
-    # A default InfoTemplate which specifies a format for time so that the 0 time stamp still shows fractions
-    static [string]$InfoTemplate = $(if($global:Host.UI.SupportsVirtualTerminal -or $Env:ConEmuANSI -eq "ON") {
-                                          '$e[38;5;1m$("{0:hh\:mm\:ss\.fff}" -f ${Time})$("  " * $CallStackDepth)$e[38;5;6m${Message} $e[38;5;5m<${Command}> ${ScriptName}:${LineNumber}$e[39m'
-                                      } else {
-                                          '$("{0:hh\:mm\:ss\.fff}" -f ${Time})$("  " * $CallStackDepth)${Message} <${Command}> ${ScriptName}:${LineNumber}'
-                                      })
-
-    # The only constructor takes the message and the CallStack as parameters
-    Information.InformationMessage([PSObject]$MessageData, [Array]$CallStack, [string]$Prefix, [bool]$Simple){
-        $this.init([PSObject]$MessageData, [Array]$CallStack, [string]$Prefix, [bool]$Simple)
+    TraceInformation([string]$Message, [Hashtable]$BoundParameters) {
+        $this.Message = $Message
+        $this.BoundParameters = $BoundParameters
     }
 
-    Information.InformationMessage([PSObject]$MessageData, [Array]$CallStack){
-        $this.init([PSObject]$MessageData, [Array]$CallStack, $null, $false)
-    }
-
-    hidden [void] init([PSObject]$MessageData, [Array]$CallStack, [string]$Prefix, [bool]$Simple) {
-
-        $this.MessageData = $MessageData
-        if($CallStack -isnot [System.Management.Automation.CallStackFrame[]]) {
-            $this.CallStack = $CallStack.ForEach{ $_ -split "[\r?\n]+" }
-        } else {
-            $this.CallStack = $CallStack
-        }
-        if([DateTimeOffset]::MinValue -eq [Information.InformationMessage]::StartTime) {
-            [Information.InformationMessage]::StartTime = $this.TimeGenerated
-        }
-
-        $this.ElapsedTime = $this.TimeGenerated - [Information.InformationMessage]::StartTime
-
-        # These are the things I can imagine wanting in the debug message
-        $this.Message = ([PSCustomObject]@{Data=$this.MessageData} | Format-Table -HideTableHeaders -AutoSize | Out-String).Trim()
-        if($this.MessageData -is [String]) {
-            $this.Message = $this.MessageData.Trim("`r","`n")
-            if($this.Message -match "\n") {
-                $this.Message += "`n" + (" " * [regex]::Match([Information.InformationMessage]::InfoTemplate,'\${?message',"IgnoreCase").Index)
-            }
-        }
-
-        $Frame = $this.CallStack[0]
-
-        if($Frame -is [string]) {
-            $this.FunctionName, $this.ScriptPath, $this.LineNumber = ($Frame -split "^at |, |: line ", 4).Where{$_}
-            $this.Command = $this.FunctionName
-            $this.Location = $Frame
-            $this.Arguments = ''
-        } else {
-            $this.FunctionName   = $Frame.FunctionName -replace '^<?(.*?)>?$','$1'
-            $this.ScriptPath     = $Frame.ScriptName
-            $this.LineNumber     = $Frame.ScriptLineNumber
-            $this.Command        = $Frame.Command
-            $this.Location       = $Frame.Location
-            $this.Arguments      = $Frame.Arguments
-        }
-
-        if($this.ScriptPath) {
-            $this.ScriptName = Split-Path $this.ScriptPath -Leaf
-        } else {
-            $this.ScriptName = "."
-        }
-
-        $this.Time           = $this.TimeGenerated.TimeOfDay
-        $this.CallStackDepth = $this.CallStack.Count - 1
-
-
-        # Handle Error Types
-        # Normalize ErrorRecord if available (is it ever not?)
-        if($this.MessageData -is [System.Exception] -and $this.MessageData.ErrorRecord) {
-            $this.MessageData = $this.MessageData.ErrorRecord
-        }
-
-        # Add a prefix for errors if one wasn't manually set
-        if($Prefix) {
-            $this.Message = $Prefix + " " + $this.Message
-        }elseif($this.MessageData -is [System.Management.Automation.Runspaces.RemotingErrorRecord]) {
-            $this.Message = "REMOTE ERROR: " + $this.Message
-        } elseif($this.MessageData -is [System.Management.Automation.ErrorRecord]) {
-            $this.Message = "ERROR: " + $this.Message
-        } elseif($this.MessageData -is [System.Exception]) {
-            $this.Message = "EXCEPTION: " + $this.Message
-        }
-
-        # Expand the exception stack if we weren't asked not to...
-        if(!$Simple) {
-            $ErrorRecord = $null
-            if($this.MessageData -is [System.Management.Automation.ErrorRecord] -or $this.MessageData -is [System.Exception]) {
-                $ErrorRecord = $this.MessageData
-            }
-
-            # Render the nested errors directly into the message
-            $width = [Information.InformationMessage]::ExceptionWidth
-            $level = 1
-            while($ErrorRecord) {
-                if($level -eq 1) {
-                    $this.Message += "`n`n"
+    [string] ToString() {
+        return $this.Message + " " + $($(
+                foreach ($param in $this.BoundParameters.GetEnumerator()) {
+                    "-{0}:{1}" -f $param.Key, $($param.Value -join ", ")
                 }
-                $ExMessage = $ErrorRecord | Format-List * -Force | Out-String -Width $width -Stream | ForEach-Object { ("    " * $level) + $_ }
-                $this.Message = $this.Message.TrimEnd() + "`n`n`n" +
-                                 ("    " * $level) + ($ErrorRecord.GetType().FullName -replace "^\s*(.*?)\s*$","[`$1]`n") +
-                                 ($ExMessage[1..$($ExMessage.Length-1)] -join "`n").TrimEnd() +
-                                 "`n`n" + ("    " * ($level+1))
-
-                # Unravel all the levels?
-                if($ErrorRecord.Exception) {
-                    $ErrorRecord = $ErrorRecord.Exception
-                } else {
-                    $ErrorRecord = $ErrorRecord.InnerException
-                }
-                $level += 1
-                $width -= 4
-            }
-        }
-
-    }
-
-    [string]ToString() {
-
-        $e = [char]27
-        # Copy everything into local variables so they work in ExpandString
-        $local:MessageData = $this.MessageData
-        $local:Message = $this.Message
-        $local:CallStack = $this.CallStack
-        $local:TimeGenerated = $this.TimeGenerated
-        $local:ElapsedTime = $this.ElapsedTime
-        $local:Time = $this.Time
-        $local:FunctionName = $this.FunctionName
-        $local:ScriptPath = $this.ScriptPath
-        $local:LineNumber = $this.LineNumber
-        $local:Command = $this.Command
-        $local:Location = $this.Location
-        $local:Arguments = $this.Arguments
-        $local:ScriptName = $this.ScriptName
-        $local:CallStackDepth = $this.CallStackDepth
-
-        try {
-            return (Get-Variable ExecutionContext -ValueOnly).InvokeCommand.ExpandString( [Information.InformationMessage]::InfoTemplate )
-        } catch {
-            Write-Warning $_
-            return "{0} {1} at {2}" -f $this.Time, $this.Message, $this.Location
-        }
+            ) -join " ")
     }
 }
-
-Update-TypeData -TypeName Information.InformationMessage -SerializationMethod 'AllPublicProperties' -SerializationDepth 4 -Force
-Update-TypeData -TypeName System.Management.Automation.InformationRecord -SerializationMethod 'AllPublicProperties' -SerializationDepth 6 -Force
-
 
 
 # dot source the functions
 (Join-Path $PSScriptRoot Private\*.ps1 -Resolve -ErrorAction SilentlyContinue).ForEach{ . $_ }
 (Join-Path $PSScriptRoot Public\*.ps1 -Resolve).ForEach{ . $_ }
+
+Export-ModuleMember -Function * -Variable DebugFilterInclude, DebugFilterExclude

@@ -7,35 +7,14 @@ function New-LoggingCommand {
     )
     begin {
         $ProxyFactory = [System.Management.Automation.ProxyCommand]
-    <#
-        class TraceInformation {
-            [String]$Message
-
-            [Hashtable]$BoundParameters
-
-            TraceInformation([string]$Message, [Hashtable]$BoundParameters) {
-                $this.Message = $Message
-                $this.BoundParameters = $BoundParameters
-            }
-
-            [string] ToString() {
-                return $this.Message + " " + $($(
-                    foreach($param in $this.BoundParameters.GetEnumerator()) {
-                        "-{0}:{1}" -f $param.Key, $($param.Value -join ", ")
-                    }
-                ) -join " ")
-            }
-        }
-    #>
     }
-
     process {
         $CommandName = $Command.Name
         if ($Command.Verb -and $Command.Noun) {
             $WrapperName = $Command.Verb + "-Info" + $Command.Noun
-            Set-Alias $Command.Name $WrapperName -Scope Global
+            Set-Alias $Command.Name $WrapperName -Scope Global -Verbose:$Verbose
             if ($Command.ModuleName) {
-                Set-Alias "$($Command.ModuleName)\$($Command.Name)" $WrapperName -Scope Global
+                Set-Alias "$($Command.ModuleName)\$($Command.Name)" $WrapperName -Scope Global -Verbose:$Verbose
             }
         } else {
             $WrapperName = "Info" + $Command.Name
@@ -54,9 +33,6 @@ function New-LoggingCommand {
         if($DynamicParam = $ProxyFactory::GetDynamicParam($Command)) {
             $DynamicParam = "dynamicparam {`n$DynamicParam}" -replace "\s*\|\s*Microsoft\.PowerShell\.Core\\Where-Object\s*{", ".Where{"
         }
-        if($Help = $Command | Get-Help) {
-            $HelpComments = $ProxyFactory::GetHelpComments(@($Help)[0])
-        }
 
 Invoke-Expression @"
 function global:$WrapperName {
@@ -66,26 +42,22 @@ param(
 )
 $DynamicParam
 begin {
-    # [TraceInformation]::new("BEGIN $CommandName", `$PSBoundParameters) | Write-Info -Tag Trace, Enter, Begin
     Write-Info "BEGIN $CommandName"
     $Begin
 }
 process {
-    # [TraceInformation]::new("PROCESS $CommandName", `$PSBoundParameters) | Write-Info -Tag Trace, Enter, Process
     Write-Info "PROCESS $CommandName"
     $Process
 }
 end {
-    # [TraceInformation]::new("END $CommandName", `$PSBoundParameters) | Write-Info -Tag Trace, Leave, End
     Write-Info "END $CommandName"
     $End
 }
 <#
-.ForwardHelpTargetName $($Command.ModuleName)\$CommandName
-.ForwardHelpCategory $($Command.Commandtime)
+    .ForwardHelpTargetName $($Command.ModuleName)\$CommandName
+    .ForwardHelpCategory $($Command.Commandtime)
 #>
 }
 "@
-
     }
 }

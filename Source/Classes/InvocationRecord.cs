@@ -1,17 +1,16 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Management.Automation;
-using System.Text;
 
 namespace Information
 {
-    public class InvocationRecord : InformationRecord
+	[System.ComponentModel.TypeConverter(typeof(InformationRecordConverter))]
+	public class InvocationRecord : InformationRecord
     {
         public InvocationInfo Invocation { get; set; }
 
         public new DateTimeOffset TimeGenerated { get; set; }
 
-        public new TimeSpan ElapsedTime { get; set; }
+        public TimeSpan ElapsedTime { get; set; }
 
         public InvocationRecord(object messageData, InvocationInfo invocation, string[] tags = null) : base(messageData, invocation.Line)
         {

@@ -25,8 +25,8 @@ A command to wrap around scripts to not only support filtering the output for Wr
 Like Write-Info, but specifically for error objects. This is what's used internally in Trace-Info.
 
 ### [Set-InfoTemplate](Set-InfoTemplate.md)
-Set a display template for our InformationMessage
+Set a display template for our InformationRecord
 
 ### [Get-InfoTemplate](Get-InfoTemplate.md)
-Get the current display template for InformationMessage
+Get the current display template for InformationRecord
 

@@ -68,7 +68,7 @@ function Trace-Info {
             }
         }
 
-        # To make logging convenient, we convert Errors into Information.InformationMessages:
+        # To make logging convenient, we convert Errors into Information.InformationRecord:
         $Max = $TraceExceptionLog.Count - 1
         :convertErrors foreach($e in 0..$Max) {
             if($TraceExceptionLog[$e] -isnot [System.Management.Automation.InformationRecord]) {

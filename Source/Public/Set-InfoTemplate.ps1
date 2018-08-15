@@ -15,7 +15,7 @@ function Set-InfoTemplate {
 
             {TimeGenerated}  = A full DateTimeOffset for when this record was generated
             {ClockTime}      = The TimeOfDay from the DateTimeOffset (A TimeSpan representing when the record was generated)
-            {ElapsedTime}    = The elapsed time since the Information.InformationMessage::StartTime
+            {ElapsedTime}    = The elapsed time since the [Information.InformationFormatter]::StartTime
 
             Additionally, there are several variables from the InvocationInfo of the command:
 
@@ -32,7 +32,7 @@ function Set-InfoTemplate {
         .Example
             Set-InfoTemplate '{ElapsedTime} {ScriptName}:{ScriptLineNumber} {Message}'
 
-            Sets the Information.InformationMessage template to a simple message showing elapsed time, the source, and the message
+            Sets the InformationRecord template to a simple message showing elapsed time, the source, and the message
         .Example
             Set-InfoTemplate '{ElapsedTime:mm:ss.fff} {Message} <{Command}> {ScriptName}:{ScriptLineNumber}'
 

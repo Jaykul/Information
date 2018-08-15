@@ -4,7 +4,7 @@ using System.Management.Automation;
 
 namespace Information
 {
-    [Cmdlet(VerbsCommunications.Write, "Info")]
+    [Cmdlet(VerbsCommunications.Write, "Information")]
     public class WriteInformationCommand : PSCmdlet
     {
         /// <summary>
@@ -21,12 +21,22 @@ namespace Information
         [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays")]
         public string[] Tags { get; set; }
 
+
+        /// <summary>
+        /// A time to use as the "Start" time for the InformationHelper formatter
+        /// </summary>
+        [Parameter]
+        DateTimeOffset StartTime { get; set; } = DateTimeOffset.MinValue;
+
         /// <summary>
         /// This method implements the processing of the Write-Information command
         /// </summary>
         protected override void BeginProcessing()
         {
-
+            if (DateTimeOffset.MinValue != StartTime)
+            {
+                InformationFormatter.StartTime = StartTime;
+            }
         }
 
         /// <summary>
@@ -37,6 +47,5 @@ namespace Information
             var info = new InvocationRecord(MessageData, MyInvocation, Tags);
             WriteInformation(info);
         }
-
     }
 }

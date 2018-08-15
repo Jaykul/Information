@@ -45,16 +45,14 @@ function Write-EntryInfo {
         [DateTimeOffset]$StartTime
     )
     begin {
-        if ($StartTime) {
-            [Information.InformationMessage]::StartTime = $StartTime
-        }
-
+        # We use the prompt as a way to track duration
         if (!${script:Pre-Trace Timer Prompt}) {
-            # Assume that we should reset the StartTime any time we hit the prompt:
+            [Information.InformationHelper]::StartTime = [DateTimeOffset]::Now
             ${script:Pre-Trace Timer Prompt} = ${function:prompt}
 
+            # If we hit the prompt, the script is over, so reset StartTime:
             ${function:global:prompt} = {
-                [Information.InformationMessage]::StartTime = [DateTimeOffset]::MinValue
+                [Information.InformationHelper]::StartTime = [DateTimeOffset]::MinValue
                 ${function:global:prompt} = ${script:Pre-Trace Timer Prompt}
                 Remove-Variable -Scope Script -Name "Pre-Trace Timer Prompt"
                 & ${function:global:prompt}
@@ -66,6 +64,10 @@ function Write-EntryInfo {
                     Remove-Variable -Scope Script -Name "Pre-Trace Timer Prompt"
                 }
             }
+        }
+
+        if ($StartTime) {
+            [Information.InformationHelper]::StartTime = $StartTime
         }
 
         # Magically look up the stack for anyone turning on Information and treat it as present here:

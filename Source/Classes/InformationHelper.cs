@@ -9,7 +9,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 
 namespace Information {
-    public class InformationHelper {
+    public static class InformationFormatter {
         /// <summary>
         /// Keep track of when the current invocation started
         /// </summary>
@@ -25,8 +25,13 @@ namespace Information {
         /// </summary>
         public static string InfoTemplate { get; set; } = "{ClockTime} {Message} {PositionMessage}";
 
-
-        public static string FormatRecord(InvocationRecord record, string template = null)
+        /// <summary>
+        /// Render an InvocationRecord using a template string
+        /// </summary>
+        /// <param name="record">The informationRecord</param>
+        /// <param name="template">An override template string</param>
+        /// <returns>A formatted string representation of the InvocationRecord</returns>
+        public static string FormatInformation(this InformationRecord record, string template = null)
         {
             var message = template ?? InfoTemplate;
             message = Regex.Replace(message, @"{Message}", ExpandMessageData(record.MessageData), RegexOptions.IgnoreCase);
@@ -35,23 +40,24 @@ namespace Information {
             // supported by default InformationRecord
             message = Regex.Replace(message, @"{ClockTime}", record.TimeGenerated.TimeOfDay.ToString(@"hh\:mm\:ss\.ffffff"), RegexOptions.IgnoreCase);
             message = Regex.Replace(message, @"{ClockTime:(.+?)}", m => record.TimeGenerated.TimeOfDay.ToString(m.Groups[1].Value.Replace(":", @"\:").Replace(".", @"\.").Replace("-", @"\-")), RegexOptions.IgnoreCase);
-            message = Regex.Replace(message, @"{ElapsedTime}", (record.TimeGenerated - StartTime).ToString(@"hh\:mm\:ss\.ffffff"), RegexOptions.IgnoreCase);
-            message = Regex.Replace(message, @"{ElapsedTime:(.+?)}", m => (record.TimeGenerated - StartTime).ToString(m.Groups[1].Value.Replace(":", @"\:").Replace(".", @"\.").Replace("-", @"\-")), RegexOptions.IgnoreCase);
             message = Regex.Replace(message, @"{TimeGenerated}", record.TimeGenerated.ToString(), RegexOptions.IgnoreCase);
             message = Regex.Replace(message, @"{TimeGenerated:(.+?)}", m => record.TimeGenerated.TimeOfDay.ToString(m.Groups[1].Value.Replace(":", @"\:").Replace(".", @"\.").Replace("-", @"\-")), RegexOptions.IgnoreCase);
             message = Regex.Replace(message, @"{Computer}", record.Computer, RegexOptions.IgnoreCase);
             message = Regex.Replace(message, @"{User}", record.User, RegexOptions.IgnoreCase);
 
             // requires InvocationRecord
-            if (record.Invocation != null)
+            if(record is InvocationRecord invocation)
             {
-                message = Regex.Replace(message, @"{Command}", (string)LanguagePrimitives.ConvertTo(record.Invocation.MyCommand, typeof(string)), RegexOptions.IgnoreCase);
-                message = Regex.Replace(message, @"{CommandName}", record.Invocation.MyCommand.Name, RegexOptions.IgnoreCase);
-                message = Regex.Replace(message, @"{ScriptLineNumber}", record.Invocation.ScriptLineNumber.ToString(), RegexOptions.IgnoreCase);
-                message = Regex.Replace(message, @"{ScriptName}", record.Invocation.ScriptName, RegexOptions.IgnoreCase);
-                message = Regex.Replace(message, @"{PSCommandPath}", (string)LanguagePrimitives.ConvertTo(record.Invocation.PSCommandPath, typeof(string)), RegexOptions.IgnoreCase);
-                message = Regex.Replace(message, @"{Position}", record.Invocation.PositionMessage.Split('\r', '\n')[0].ToString(), RegexOptions.IgnoreCase);
-                message = Regex.Replace(message, @"{PositionMessage}", record.Invocation.PositionMessage, RegexOptions.IgnoreCase);
+                message = Regex.Replace(message, @"{ElapsedTime}", invocation.ElapsedTime.ToString(@"hh\:mm\:ss\.ffffff"), RegexOptions.IgnoreCase);
+                message = Regex.Replace(message, @"{ElapsedTime:(.+?)}", m => invocation.ElapsedTime.ToString(m.Groups[1].Value.Replace(":", @"\:").Replace(".", @"\.").Replace("-", @"\-")), RegexOptions.IgnoreCase);
+
+                message = Regex.Replace(message, @"{Command}", (string)LanguagePrimitives.ConvertTo(invocation.Invocation.MyCommand, typeof(string)), RegexOptions.IgnoreCase);
+                message = Regex.Replace(message, @"{CommandName}", invocation.Invocation.MyCommand.Name, RegexOptions.IgnoreCase);
+                message = Regex.Replace(message, @"{CommandPath}", (string)LanguagePrimitives.ConvertTo(invocation.Invocation.PSCommandPath, typeof(string)), RegexOptions.IgnoreCase);
+                message = Regex.Replace(message, @"{ScriptLineNumber}", invocation.Invocation.ScriptLineNumber.ToString(), RegexOptions.IgnoreCase);
+                message = Regex.Replace(message, @"{ScriptName}", invocation.Invocation.ScriptName, RegexOptions.IgnoreCase);
+                message = Regex.Replace(message, @"{Position}", invocation.Invocation.PositionMessage.Split('\r', '\n')[0].ToString(), RegexOptions.IgnoreCase);
+                message = Regex.Replace(message, @"{PositionMessage}", invocation.Invocation.PositionMessage, RegexOptions.IgnoreCase);
             }
             return message;
         }
@@ -160,7 +166,5 @@ namespace Information {
             }
             msg.Append(" ".PadLeft((level * 4)));
         }
-
-
     }
 }

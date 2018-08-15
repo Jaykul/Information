@@ -11,11 +11,11 @@ namespace Information
 
         public new DateTimeOffset TimeGenerated { get; set; }
 
+        public new TimeSpan ElapsedTime { get; set; }
+
         public InvocationRecord(object messageData, InvocationInfo invocation, string[] tags = null) : base(messageData, invocation.Line)
         {
             Invocation = invocation;
-            TimeGenerated = DateTimeOffset.Now;
-
             if (tags != null)
             {
                 Tags.AddRange(tags);
@@ -25,13 +25,17 @@ namespace Information
         public InvocationRecord(object messageData, string source) : base(messageData, source)
         {
             TimeGenerated = DateTimeOffset.Now;
+            if (0 == InformationFormatter.StartTime.Ticks) {
+                InformationFormatter.StartTime = TimeGenerated;
+            }
+            ElapsedTime = TimeGenerated - InformationFormatter.StartTime;
         }
 
         public string DisplayProperty
         {
             get
             {
-                return InformationHelper.FormatRecord(this);
+                return this.FormatInformation();
             }
         }
     }

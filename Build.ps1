@@ -93,7 +93,7 @@ function init {
 function clean {
     #.Synopsis
     #   Clean output and old log
-    [DependsOn("init")]
+    #[DependsOn("init")]
     [CmdletBinding()]
     param(
         # Also clean packages
@@ -127,7 +127,7 @@ function update {
     #   However, currently only the nuget providers supports a -Destination
     #   So for most cases, you could use nuget restore instead:
     #      nuget restore $(Join-Path $Path packages.config) -PackagesDirectory "$Path\packages" -ExcludeVersion -PackageSaveMode nuspec
-    [DependsOn("init")]
+    #[DependsOn("init")]
     [CmdletBinding()]
     param(
         # Force reinstall
@@ -169,7 +169,7 @@ function update {
 }
 
 function build {
-    [DependsOn("update")]
+    #[DependsOn("update")]
     [CmdletBinding()]
     param()
     Write-Host "BUILDING: $ModuleName from $Path"
@@ -279,7 +279,7 @@ function build {
 }
 
 function test {
-    [DependsOn("build")]
+    #[DependsOn("build")]
     [CmdletBinding()]
     param(
         [Switch]$Quiet,
@@ -392,7 +392,7 @@ function test {
 }
 
 function package {
-    [DependsOn("build","test")]
+    #[DependsOn("build","test")]
     [CmdletBinding()]
     param()
 
